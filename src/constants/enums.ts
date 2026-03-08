@@ -39,3 +39,10 @@ export enum PaymentStatus {
   Failed, // = 2
   Refunded // = 3
 }
+
+export enum TokenType {
+  AccessToken,
+  RefreshToken,
+  ForgotPasswordToken,
+  EmailVerifyToken
+}
