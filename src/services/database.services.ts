@@ -1,5 +1,12 @@
 import { config } from 'dotenv'
 import { MongoClient, Db, Collection } from 'mongodb'
+import Booking from '~/models/schemas/Booking.schema'
+import Category from '~/models/schemas/Category.schema'
+import Coupon from '~/models/schemas/Coupon.schema'
+import Payment from '~/models/schemas/Payment.schema'
+import RefreshToken from '~/models/schemas/RefreshToken.schema'
+import Schedule from '~/models/schemas/Schedule.schema'
+import Tour from '~/models/schemas/Tour.schema'
 import User from '~/models/schemas/User.schema'
 
 config()
@@ -22,6 +29,31 @@ class DatabaseService {
       console.log('Error', error)
       throw error
     }
+  }
+
+  get users(): Collection<User> {
+    return this.db.collection(process.env.DB_USERS_COLLECTION as string)
+  }
+  get refresh_tokens(): Collection<RefreshToken> {
+    return this.db.collection(process.env.DB_REFRESH_TOKENS_COLLECTION as string)
+  }
+  get categories(): Collection<Category> {
+    return this.db.collection(process.env.DB_CATEGORIES_COLLECTION as string)
+  }
+  get tours(): Collection<Tour> {
+    return this.db.collection(process.env.DB_TOURS_COLLECTION as string)
+  }
+  get schedules(): Collection<Schedule> {
+    return this.db.collection(process.env.DB_SCHEDULES_COLLECTION as string)
+  }
+  get bookings(): Collection<Booking> {
+    return this.db.collection(process.env.DB_BOOKINGS_COLLECTION as string)
+  }
+  get payments(): Collection<Payment> {
+    return this.db.collection(process.env.DB_PAYMENTS_COLLECTION as string)
+  }
+  get coupons(): Collection<Coupon> {
+    return this.db.collection(process.env.DB_COUPONS_COLLECTION as string)
   }
 }
 
