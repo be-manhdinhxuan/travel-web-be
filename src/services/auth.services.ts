@@ -22,7 +22,7 @@ class AuthService {
         user_id,
         role,
         verify,
-        token_type: TokenType.AccessToken,
+        token_type: TokenType.AccessToken
       },
       privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
       options: {
@@ -37,7 +37,7 @@ class AuthService {
         user_id,
         role,
         verify,
-        token_type: TokenType.RefreshToken,
+        token_type: TokenType.RefreshToken
       },
       privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
       options: {
@@ -74,8 +74,19 @@ class AuthService {
     })
   }
 
-  private signAccessAndRefreshToken({ user_id, role, verify }: { user_id: string; role: UserRole; verify: UserVerifyStatus }) {
-    return Promise.all([this.signAccessToken({ user_id, role, verify }), this.signRefreshToken({ user_id, role, verify })])
+  private signAccessAndRefreshToken({
+    user_id,
+    role,
+    verify
+  }: {
+    user_id: string
+    role: UserRole
+    verify: UserVerifyStatus
+  }) {
+    return Promise.all([
+      this.signAccessToken({ user_id, role, verify }),
+      this.signRefreshToken({ user_id, role, verify })
+    ])
   }
 
   async register(payload: RegisterReqBody) {
@@ -235,6 +246,32 @@ class AuthService {
     console.log(result)
     return {
       message: MESSAGES.LOGOUT_SUCCESS
+    }
+  }
+
+  async refreshToken({
+    user_id,
+    role,
+    verify,
+    refresh_token
+  }: {
+    user_id: string
+    role: UserRole
+    verify: UserVerifyStatus
+    refresh_token: string
+  }) {
+    const [new_access_token, new_refresh_token] = await Promise.all([
+      this.signAccessToken({ user_id, role, verify }),
+      this.signRefreshToken({ user_id, role, verify })
+    ])
+    await databaseServices.refreshTokens.deleteOne({ token: refresh_token })
+
+    await databaseServices.refreshTokens.insertOne(
+      new RefreshToken({ user_id: new ObjectId(user_id), token: new_refresh_token })
+    )
+    return {
+      access_token: new_access_token,
+      refresh_token: new_refresh_token
     }
   }
 }

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   loginController,
   logoutController,
+  refreshTokenController,
   registerController,
   resendVerifyEmailController,
   verifyEmailController
@@ -92,6 +93,19 @@ authsRouter.post(
   accessTokenValidator,
   refreshTokenValidator,
   wrapRequestHandler(logoutController)
+)
+
+/**
+ * Description: Refresh token
+ * Path: /refresh-token
+ * Method: POST
+ * Body: {refresh_token: string}
+ */
+authsRouter.post(
+  '/refresh-token',
+  checkAllowedFields(['refresh_token']),
+  refreshTokenValidator,
+  wrapRequestHandler(refreshTokenController)
 )
 
 export default authsRouter
