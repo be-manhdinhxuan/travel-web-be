@@ -229,6 +229,14 @@ class AuthService {
       refresh_token
     }
   }
+
+  async logout(refresh_token: string) {
+    const result = await databaseServices.refreshTokens.deleteOne({ token: refresh_token })
+    console.log(result)
+    return {
+      message: MESSAGES.LOGOUT_SUCCESS
+    }
+  }
 }
 
 const authsService = new AuthService()

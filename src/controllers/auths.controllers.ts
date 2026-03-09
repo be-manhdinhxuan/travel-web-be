@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import { UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
-import { LoginReqBody, RegisterReqBody, TokenPayload, VerifyEmailReqBody } from '~/models/requests/Auth.requests'
+import { LoginReqBody, LogoutReqBody, RegisterReqBody, TokenPayload, VerifyEmailReqBody } from '~/models/requests/Auth.requests'
 import User from '~/models/schemas/User.schema'
 import authsService from '~/services/auth.services'
 import databaseServices from '~/services/database.services'
@@ -48,4 +48,10 @@ export const loginController = async (req: Request<ParamsDictionary, any, LoginR
     message: MESSAGES.LOGIN_SUCCESS,
     result
   })
+}
+
+export const logoutController = async (req: Request<ParamsDictionary, any, LogoutReqBody>, res: Response) => {
+  const { refresh_token } = req.body
+  const result = await authsService.logout(refresh_token)
+  return res.json(result)
 }

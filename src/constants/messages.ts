@@ -35,6 +35,9 @@ export const MESSAGES = {
   EMAIL_VERIFY_SUCCESS: 'Email verify success',
 
   ACCESS_TOKEN_IS_REQUIRED: 'Access token is required',
+  REFRESH_TOKEN_IS_REQUIRED: 'Refresh token is required',
+  USED_REFRESH_TOKEN_OR_NOT_EXISTS: 'Used refresh token or not exists',
 
-  LOGIN_SUCCESS: 'Login success'
+  LOGIN_SUCCESS: 'Login success',
+  LOGOUT_SUCCESS: 'Logout success'
 } as const

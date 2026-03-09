@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   loginController,
+  logoutController,
   registerController,
   resendVerifyEmailController,
   verifyEmailController
@@ -9,6 +10,7 @@ import {
   accessTokenValidator,
   emailVerifyTokenValidator,
   loginValidator,
+  refreshTokenValidator,
   registerValidator
 } from '~/middlewares/auths.middlewares'
 import { checkAllowedFields } from '~/middlewares/common.middlewares'
@@ -75,6 +77,21 @@ authsRouter.post(
   checkAllowedFields(['email', 'password']),
   loginValidator,
   wrapRequestHandler(loginController)
+)
+
+/**
+ * Description: Logout a user
+ * Path: /logout
+ * Method: POST
+ * Header: {Authorization: Bearer <access_token>}
+ * Body: {refresh_token: string}
+ */
+authsRouter.post(
+  '/logout',
+  checkAllowedFields(['refresh_token']),
+  accessTokenValidator,
+  refreshTokenValidator,
+  wrapRequestHandler(logoutController)
 )
 
 export default authsRouter
