@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import { UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
-import { RegisterReqBody, TokenPayload, VerifyEmailReqBody } from '~/models/requests/User.requests'
+import { RegisterReqBody, TokenPayload, VerifyEmailReqBody } from '~/models/requests/Auth.requests'
 import authsService from '~/services/auth.services'
 import databaseServices from '~/services/database.services'
 
@@ -13,9 +13,8 @@ export const registerController = async (
   res: Response,
   next: NextFunction
 ) => {
-  // throw new Error('Test error')
   const result = await authsService.register(req.body)
-  return res.json({
+  return res.status(HTTP_STATUS.CREATED).json({
     message: MESSAGES.REGISTER_SUCCESS,
     result
   })
@@ -32,10 +31,7 @@ export const verifyEmailController = async (req: Request<ParamsDictionary, any, 
   })
 }
 
-export const resendVerifyEmailController = async (
-  req: Request,
-  res: Response
-) => {
+export const resendVerifyEmailController = async (req: Request, res: Response) => {
   const { user_id } = req.decoded_authorization as TokenPayload
 
   const result = await authsService.resendEmailVerify(user_id)

@@ -110,7 +110,7 @@ export const registerValidator = validate(
           options: async (value) => {
             const isEmailExist = await authsService.checkEmailExist(value)
             if (isEmailExist) {
-              throw new Error(MESSAGES.EMAIL_ALREADY_EXISTS)
+              throw new ErrorWithStatus({ message: MESSAGES.EMAIL_ALREADY_EXISTS, status: HTTP_STATUS.CONFLICT })
             }
             return true
           }
