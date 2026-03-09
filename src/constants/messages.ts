@@ -23,6 +23,8 @@ export const MESSAGES = {
   CONFIRM_PASSWORD_NOT_MATCH: 'Xác nhận mật khẩu không khớp',
   OLD_PASSOWRD_NOT_MATCH: 'Old password is not match',
   CHANGE_PASSWORD_SUCCESS: 'Change password success',
+  FORGOT_PASSWORD_SUCCESS: 'Forgot password success',
+  CHECK_EMAIL_TO_RESET_PASSWORD: 'Check email to reset password',
 
   DATE_OF_BIRTH_MUST_BE_ISO8601: 'Ngày sinh phải tuân theo tiêu chuẩn ISO8601',
 

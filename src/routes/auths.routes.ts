@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  forgotPasswordController,
   loginController,
   logoutController,
   refreshTokenController,
@@ -10,6 +11,7 @@ import {
 import {
   accessTokenValidator,
   emailVerifyTokenValidator,
+  forgotPasswordValidator,
   loginValidator,
   refreshTokenValidator,
   registerValidator
@@ -107,5 +109,13 @@ authsRouter.post(
   refreshTokenValidator,
   wrapRequestHandler(refreshTokenController)
 )
+
+/**
+ * Description: Submit email to reset password, send email to user
+ * Path: /forgot-passwor
+ * Method: POST
+ * Body: {email: string}
+ */
+authsRouter.post('/forgot-password', forgotPasswordValidator, wrapRequestHandler(forgotPasswordController))
 
 export default authsRouter

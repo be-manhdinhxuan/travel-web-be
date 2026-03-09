@@ -274,6 +274,29 @@ class AuthService {
       refresh_token: new_refresh_token
     }
   }
+
+  async forgotPassword({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
+    const forgot_password_token = await this.signForgotPasswordToken({
+      user_id,
+      verify
+    })
+
+    const user = await databaseServices.users.findOneAndUpdate(
+      { _id: new ObjectId(user_id) },
+      {
+        $set: { forgot_password_token },
+        $currentDate: { updated_at: true }
+      }
+    )
+
+    if (!user) return
+
+    emailService.sendForgotPasswordEmail(user.email, forgot_password_token).catch(console.error)
+
+    return {
+      message: MESSAGES.CHECK_EMAIL_TO_RESET_PASSWORD
+    }
+  }
 }
 
 const authsService = new AuthService()

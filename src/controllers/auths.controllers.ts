@@ -5,6 +5,7 @@ import { UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
 import {
+  ForgotPasswordReqBody,
   LoginReqBody,
   LogoutReqBody,
   RefreshTokenReqBody,
@@ -75,6 +76,19 @@ export const refreshTokenController = async (
   const result = await authsService.refreshToken({ user_id, role, verify, refresh_token })
   return res.json({
     message: MESSAGES.REFRESH_TOKEN_SUCCESS,
+    result
+  })
+}
+
+export const forgotPasswordController = async (
+  req: Request<ParamsDictionary, any, ForgotPasswordReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const {_id, verify} = req.user as User
+  const result = await authsService.forgotPassword({user_id: (_id as ObjectId).toString(), verify})
+  return res.json({
+    message: MESSAGES.FORGOT_PASSWORD_SUCCESS,
     result
   })
 }

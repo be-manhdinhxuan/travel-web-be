@@ -288,3 +288,30 @@ export const loginValidator = validate(
     ['body']
   )
 )
+
+export const forgotPasswordValidator = validate(
+  checkSchema(
+    {
+      email: {
+        notEmpty: {
+          errorMessage: MESSAGES.EMAIL_IS_REQUIRED
+        },
+        isEmail: {
+          errorMessage: MESSAGES.EMAIL_IS_INVALID
+        },
+        trim: true,
+        custom: {
+          options: async (value, { req }) => {
+            const user = await databaseServices.users.findOne({ email: value })
+            if (user === null) {
+              throw new Error(MESSAGES.USER_NOT_FOUND)
+            }
+            req.user = user
+            return true
+          }
+        }
+      }
+    },
+    ['body']
+  )
+)
