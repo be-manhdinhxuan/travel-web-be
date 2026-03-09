@@ -25,6 +25,9 @@ export const MESSAGES = {
   CHANGE_PASSWORD_SUCCESS: 'Change password success',
   FORGOT_PASSWORD_SUCCESS: 'Forgot password success',
   CHECK_EMAIL_TO_RESET_PASSWORD: 'Check email to reset password',
+  INVALID_FORGOT_PASSWORD_TOKEN: 'Invalid forgot password token',
+  FORGOT_PASSWORD_TOKEN_IS_REQUIRED: 'Forgot password token is required',
+  VERIFY_FORGOT_PASSWORD_SUCCESS: 'Verify forgot password success',
 
   DATE_OF_BIRTH_MUST_BE_ISO8601: 'Ngày sinh phải tuân theo tiêu chuẩn ISO8601',
 
