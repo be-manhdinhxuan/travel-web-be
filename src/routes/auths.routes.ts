@@ -6,6 +6,7 @@ import {
   refreshTokenController,
   registerController,
   resendVerifyEmailController,
+  resetPasswordController,
   verifyEmailController,
   verifyForgotPasswordController
 } from '~/controllers/auths.controllers'
@@ -16,6 +17,7 @@ import {
   loginValidator,
   refreshTokenValidator,
   registerValidator,
+  resetPasswordValidator,
   verifyForgotPasswordTokenValidator
 } from '~/middlewares/auths.middlewares'
 import { checkAllowedFields } from '~/middlewares/common.middlewares'
@@ -118,7 +120,12 @@ authsRouter.post(
  * Method: POST
  * Body: {email: string}
  */
-authsRouter.post('/forgot-password', forgotPasswordValidator, wrapRequestHandler(forgotPasswordController))
+authsRouter.post(
+  '/forgot-password',
+  checkAllowedFields(['email']),
+  forgotPasswordValidator,
+  wrapRequestHandler(forgotPasswordController)
+)
 
 /**
  * Description: Verify link in email to reset password
@@ -130,6 +137,19 @@ authsRouter.post(
   '/verify-forgot-password',
   verifyForgotPasswordTokenValidator,
   wrapRequestHandler(verifyForgotPasswordController)
+)
+
+/**
+ * Description: Reset password
+ * Path: /reset-password
+ * Method: POST
+ * Body: {forgot_password_token: string, password: string, confirm_password: string}
+ */
+authsRouter.post(
+  '/reset-password',
+  checkAllowedFields(['forgot_password_token', 'password', 'confirm_password']),
+  resetPasswordValidator,
+  wrapRequestHandler(resetPasswordController)
 )
 
 export default authsRouter
