@@ -4,7 +4,8 @@ import { ObjectId } from 'mongodb'
 import { UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
-import { RegisterReqBody, TokenPayload, VerifyEmailReqBody } from '~/models/requests/Auth.requests'
+import { LoginReqBody, RegisterReqBody, TokenPayload, VerifyEmailReqBody } from '~/models/requests/Auth.requests'
+import User from '~/models/schemas/User.schema'
 import authsService from '~/services/auth.services'
 import databaseServices from '~/services/database.services'
 
@@ -37,4 +38,14 @@ export const resendVerifyEmailController = async (req: Request, res: Response) =
   const result = await authsService.resendEmailVerify(user_id)
 
   return res.json(result)
+}
+
+export const loginController = async (req: Request<ParamsDictionary, any, LoginReqBody>, res: Response) => {
+  const user = req.user as User
+  const user_id = user._id as ObjectId
+  const result = await authsService.login({ user_id: user_id.toString(), role: user.role, verify: user.verify })
+  return res.json({
+    message: MESSAGES.LOGIN_SUCCESS,
+    result
+  })
 }

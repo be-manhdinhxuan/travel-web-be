@@ -18,3 +18,8 @@ export interface RegisterReqBody {
 export interface VerifyEmailReqBody {
   email_verify_token: string
 }
+
+export interface LoginReqBody {
+  email: string
+  password: string
+}

@@ -8,6 +8,8 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { verifyToken } from '~/utils/jwt'
 import { capitalize } from 'lodash'
 import { JsonWebTokenError } from 'jsonwebtoken'
+import { hashPassword } from '~/utils/crypto'
+import databaseServices from '~/services/database.services'
 
 const nameSchema: ParamSchema = {
   notEmpty: {
@@ -190,5 +192,56 @@ export const emailVerifyTokenValidator = validate(
       }
     },
     ['body', 'query']
+  )
+)
+
+export const loginValidator = validate(
+  checkSchema(
+    {
+      email: {
+        isEmail: {
+          errorMessage: MESSAGES.EMAIL_IS_INVALID
+        },
+        trim: true,
+        custom: {
+          options: async (value, { req }) => {
+            const user = await databaseServices.users.findOne({
+              email: value,
+              password: hashPassword(req.body.password)
+            })
+            if (user === null) {
+              throw new Error(MESSAGES.EMAIL_OR_PASSWORD_INCORRECT)
+            }
+            req.user = user
+            return true
+          }
+        }
+      },
+      password: {
+        notEmpty: {
+          errorMessage: MESSAGES.PASSWORD_IS_REQUIRED
+        },
+        isString: {
+          errorMessage: MESSAGES.PASSWORD_MUST_BE_A_STRING
+        },
+        isLength: {
+          options: {
+            min: 6,
+            max: 50
+          },
+          errorMessage: MESSAGES.PASSWORD_LENGTH_MUST_BE_FROM_6_TO_50
+        },
+        isStrongPassword: {
+          options: {
+            minLength: 6,
+            minLowercase: 1,
+            minUppercase: 1,
+            minSymbols: 1
+          },
+          errorMessage: MESSAGES.PASSWORD_MUST_BE_STRONG
+        }
+      }
+    },
+    ['body']
   )
 )

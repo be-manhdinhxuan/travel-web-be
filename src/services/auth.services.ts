@@ -1,5 +1,5 @@
 import { config } from 'dotenv'
-import { TokenType, UserVerifyStatus } from '~/constants/enums'
+import { TokenType, UserRole, UserVerifyStatus } from '~/constants/enums'
 import User from '~/models/schemas/User.schema'
 import { signToken } from '~/utils/jwt'
 import { StringValue } from 'ms'
@@ -16,12 +16,13 @@ import HTTP_STATUS from '~/constants/httpStatus'
 config()
 
 class AuthService {
-  private signAccessToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
+  private signAccessToken({ user_id, role, verify }: { user_id: string; role: UserRole; verify: UserVerifyStatus }) {
     return signToken({
       payload: {
         user_id,
+        role,
+        verify,
         token_type: TokenType.AccessToken,
-        verify
       },
       privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
       options: {
@@ -30,12 +31,13 @@ class AuthService {
     })
   }
 
-  private signRefreshToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
+  private signRefreshToken({ user_id, role, verify }: { user_id: string; role: UserRole; verify: UserVerifyStatus }) {
     return signToken({
       payload: {
         user_id,
+        role,
+        verify,
         token_type: TokenType.RefreshToken,
-        verify
       },
       privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
       options: {
@@ -72,8 +74,8 @@ class AuthService {
     })
   }
 
-  private signAccessAndRefreshToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
-    return Promise.all([this.signAccessToken({ user_id, verify }), this.signRefreshToken({ user_id, verify })])
+  private signAccessAndRefreshToken({ user_id, role, verify }: { user_id: string; role: UserRole; verify: UserVerifyStatus }) {
+    return Promise.all([this.signAccessToken({ user_id, role, verify }), this.signRefreshToken({ user_id, role, verify })])
   }
 
   async register(payload: RegisterReqBody) {
@@ -102,6 +104,7 @@ class AuthService {
 
     const [access_token, refresh_token] = await this.signAccessAndRefreshToken({
       user_id: user_id.toString(),
+      role: UserRole.User,
       verify: UserVerifyStatus.Unverified
     })
     await databaseServices.refreshTokens.insertOne(
@@ -152,6 +155,7 @@ class AuthService {
 
     const [access_token, refresh_token] = await this.signAccessAndRefreshToken({
       user_id,
+      role: UserRole.User,
       verify: UserVerifyStatus.Verified
     })
 
@@ -208,6 +212,21 @@ class AuthService {
 
     return {
       message: MESSAGES.RESEND_EMAIL_VERIFY_SUCCESS
+    }
+  }
+
+  async login({ user_id, role, verify }: { user_id: string; role: UserRole; verify: UserVerifyStatus }) {
+    const [access_token, refresh_token] = await this.signAccessAndRefreshToken({
+      user_id,
+      role,
+      verify
+    })
+    await databaseServices.refreshTokens.insertOne(
+      new RefreshToken({ user_id: new ObjectId(user_id), token: refresh_token })
+    )
+    return {
+      access_token,
+      refresh_token
     }
   }
 }
