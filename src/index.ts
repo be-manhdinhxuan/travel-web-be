@@ -4,6 +4,7 @@ import databaseService from './services/database.services'
 import authsRouter from './routes/auths.routes'
 import { defaultErrorHandler } from './middlewares/error.middlerwares'
 import cors from 'cors'
+import usersRouter from './routes/users.routes'
 
 config()
 databaseService.connect()
@@ -14,6 +15,9 @@ app.use(cors())
 app.use(express.json())
 // Auth
 app.use('/api/auths', authsRouter)
+
+// User
+app.use('/api/users', usersRouter)
 
 app.use(defaultErrorHandler)
 

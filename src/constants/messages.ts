@@ -46,5 +46,7 @@ export const MESSAGES = {
   REFRESH_TOKEN_SUCCESS: 'Refresh token success',
 
   LOGIN_SUCCESS: 'Login success',
-  LOGOUT_SUCCESS: 'Logout success'
+  LOGOUT_SUCCESS: 'Logout success',
+
+  GET_ME_SUCCESS: 'Get me success'
 } as const
