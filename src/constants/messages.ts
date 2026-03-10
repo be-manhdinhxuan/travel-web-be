@@ -51,6 +51,8 @@ export const MESSAGES = {
   GET_ME_SUCCESS: 'Get me success',
   UPDATE_ME_SUCCESS: 'Update me success',
   USER_NOT_VERIFIED: 'User not verified',
+  UPLOAD_AVATAR_SUCCESS: 'Upload avatar success',
+  AVATAR_IS_REQUIRED: 'Avatar is required',
 
   PHONE_MUST_BE_STRING: 'Phone must be string',
   PHONE_IS_INVALID: 'Phone is invalid',
