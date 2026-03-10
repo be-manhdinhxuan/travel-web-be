@@ -60,3 +60,18 @@ export const changePasswordController = async (
     message: MESSAGES.CHANGE_PASSWORD_SUCCESS
   })
 }
+
+export const toggleWishlistController = async (
+  req: Request<ParamsDictionary & { tour_id: string }>,
+  res: Response
+) => {
+  const { user_id } = req.decoded_authorization as TokenPayload
+  const { tour_id } = req.params
+
+  const result = await usersService.toggleWishlist(user_id, tour_id)
+
+  return res.json({
+    message: 'Toggle wishlist success',
+    result
+  })
+}

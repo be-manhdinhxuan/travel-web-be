@@ -60,5 +60,9 @@ export const MESSAGES = {
   PHONE_IS_INVALID: 'Phone is invalid',
   PHONE_EXISTED: 'Phone existed',
   ADDRESS_MUST_BE_STRING: 'Address must be string',
-  ADDRESS_LENGTH_MUST_BE_FROM_1_TO_300: 'Address length must be from 1 to 300'
+  ADDRESS_LENGTH_MUST_BE_FROM_1_TO_300: 'Address length must be from 1 to 300',
+
+  TOUR_ID_IS_REQUIRED: 'Tour id is required',
+  TOUR_ID_IS_INVALID: 'Tour id is invalid',
+  TOUR_NOT_FOUND: 'Tour not found'
 } as const

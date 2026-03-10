@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express'
 import { checkSchema, ParamSchema } from 'express-validator'
+import { ObjectId } from 'mongodb'
 import { UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
 import { REGEX_PHONE } from '~/constants/regex'
 import { ErrorWithStatus } from '~/models/Errors'
 import { TokenPayload } from '~/models/requests/Auth.requests'
+import databaseServices from '~/services/database.services'
 import databaseService from '~/services/database.services'
 import { validate } from '~/utils/validation'
 
@@ -190,5 +192,38 @@ export const changePasswordValidator = validate(
       new_confirm_password: confirmChangePasswordSchema
     },
     ['body']
+  )
+)
+
+export const tourIdValidator = validate(
+  checkSchema(
+    {
+      tour_id: {
+        in: ['params'],
+        notEmpty: {
+          errorMessage: MESSAGES.TOUR_ID_IS_REQUIRED
+        },
+        isMongoId: {
+          errorMessage: MESSAGES.TOUR_ID_IS_INVALID
+        },
+        custom: {
+          options: async (value: string) => {
+            const tour = await databaseServices.tours.findOne({
+              _id: new ObjectId(value)
+            })
+
+            if (!tour) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.TOUR_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+
+            return true
+          }
+        }
+      }
+    },
+    ['params']
   )
 )

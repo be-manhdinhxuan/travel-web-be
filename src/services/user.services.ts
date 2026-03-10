@@ -123,6 +123,43 @@ class UsersService {
 
     return true
   }
+
+  async toggleWishlist(user_id: string, tour_id: string) {
+    const user = await databaseServices.users.findOne({
+      _id: new ObjectId(user_id)
+    })
+
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const tourObjectId = new ObjectId(tour_id)
+
+    let updatedUser
+
+    if (user.wishlist?.some((id) => id.equals(tourObjectId))) {
+      // remove
+      updatedUser = await databaseServices.users.findOneAndUpdate(
+        { _id: new ObjectId(user_id) },
+        { $pull: { wishlist: tourObjectId } },
+        { returnDocument: 'after', projection: { wishlist: 1 } }
+      )
+    } else {
+      // add
+      updatedUser = await databaseServices.users.findOneAndUpdate(
+        { _id: new ObjectId(user_id) },
+        { $addToSet: { wishlist: tourObjectId } },
+        { returnDocument: 'after', projection: { wishlist: 1 } }
+      )
+    }
+
+    return {
+      wishlist: updatedUser?.wishlist
+    }
+  }
 }
 
 const usersService = new UsersService()
