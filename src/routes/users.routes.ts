@@ -25,7 +25,7 @@ usersRouter.get('/me', accessTokenValidator, wrapRequestHandler(getMeController)
  * Header: { Authorization: Bearer <access_token}
  * Body: UserSchema
  */
-usersRouter.patch(
+usersRouter.put(
   '/me',
   accessTokenValidator,
   verifiedUserValidator,
