@@ -4,7 +4,7 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import { TokenPayload } from '~/models/requests/Auth.requests'
-import { UpdateMeReqBody } from '~/models/requests/User.requests'
+import { ChangePasswordReqBody, UpdateMeReqBody } from '~/models/requests/User.requests'
 import usersService from '~/services/user.services'
 
 export const getMeController = async (req: Request, res: Response, next: NextFunction) => {
@@ -30,10 +30,7 @@ export const updateMeController = async (
   })
 }
 
-export const updateAvatarController = async (
-  req: Request,
-  res: Response
-) => {
+export const updateAvatarController = async (req: Request, res: Response, next: NextFunction) => {
   const { user_id } = req.decoded_authorization as TokenPayload
 
   if (!req.file) {
@@ -48,5 +45,18 @@ export const updateAvatarController = async (
   return res.json({
     message: MESSAGES.UPLOAD_AVATAR_SUCCESS,
     result
+  })
+}
+
+export const changePasswordController = async (
+  req: Request<ParamsDictionary, any, ChangePasswordReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decoded_authorization as TokenPayload
+  const { password, new_password } = req.body
+  await usersService.changePassword(user_id, password, new_password)
+  return res.json({
+    message: MESSAGES.CHANGE_PASSWORD_SUCCESS
   })
 }

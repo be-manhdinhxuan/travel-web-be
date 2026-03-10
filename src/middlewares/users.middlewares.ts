@@ -36,6 +36,97 @@ const dateOfBirthSchema: ParamSchema = {
   }
 }
 
+const passwordSchema: ParamSchema = {
+  notEmpty: {
+    errorMessage: MESSAGES.PASSWORD_IS_REQUIRED
+  },
+  isString: {
+    errorMessage: MESSAGES.PASSWORD_MUST_BE_A_STRING
+  },
+  isLength: {
+    options: {
+      min: 6,
+      max: 50
+    },
+    errorMessage: MESSAGES.PASSWORD_LENGTH_MUST_BE_FROM_6_TO_50
+  },
+  isStrongPassword: {
+    options: {
+      minLength: 6,
+      minLowercase: 1,
+      minUppercase: 1,
+      minSymbols: 1
+    },
+    errorMessage: MESSAGES.PASSWORD_MUST_BE_STRONG
+  }
+}
+
+const confirmPasswordSchema: ParamSchema = {
+  notEmpty: {
+    errorMessage: MESSAGES.CONFIRM_PASSWORD_IS_REQUIRED
+  },
+  isString: {
+    errorMessage: MESSAGES.CONFIRM_PASSWORD_MUST_BE_A_STRING
+  },
+  isLength: {
+    options: {
+      min: 6,
+      max: 50
+    },
+    errorMessage: MESSAGES.CONFIRM_PASSWORD_LENGTH_MUST_BE_FROM_6_TO_50
+  },
+  isStrongPassword: {
+    options: {
+      minLength: 6,
+      minLowercase: 1,
+      minUppercase: 1,
+      minSymbols: 1
+    },
+    errorMessage: MESSAGES.CONFIRM_PASSWORD_MUST_BE_STRONG
+  },
+  custom: {
+    options: (value, { req }) => {
+      if (value !== req.body.password) {
+        throw new Error(MESSAGES.CONFIRM_PASSWORD_NOT_MATCH)
+      }
+      return true
+    }
+  }
+}
+
+const confirmChangePasswordSchema: ParamSchema = {
+  notEmpty: {
+    errorMessage: MESSAGES.CONFIRM_PASSWORD_IS_REQUIRED
+  },
+  isString: {
+    errorMessage: MESSAGES.CONFIRM_PASSWORD_MUST_BE_A_STRING
+  },
+  isLength: {
+    options: {
+      min: 6,
+      max: 50
+    },
+    errorMessage: MESSAGES.CONFIRM_PASSWORD_LENGTH_MUST_BE_FROM_6_TO_50
+  },
+  isStrongPassword: {
+    options: {
+      minLength: 6,
+      minLowercase: 1,
+      minUppercase: 1,
+      minSymbols: 1
+    },
+    errorMessage: MESSAGES.CONFIRM_PASSWORD_MUST_BE_STRONG
+  },
+  custom: {
+    options: (value, { req }) => {
+      if (value !== req.body.new_password) {
+        throw new Error(MESSAGES.CONFIRM_PASSWORD_NOT_MATCH)
+      }
+      return true
+    }
+  }
+}
+
 export const verifiedUserValidator = (req: Request, res: Response, next: NextFunction) => {
   const { verify } = req.decoded_authorization as TokenPayload
   if (verify !== UserVerifyStatus.Verified) {
@@ -86,6 +177,17 @@ export const updateMeValidator = validate(
           errorMessage: MESSAGES.ADDRESS_LENGTH_MUST_BE_FROM_1_TO_300
         }
       }
+    },
+    ['body']
+  )
+)
+
+export const changePasswordValidator = validate(
+  checkSchema(
+    {
+      password: passwordSchema,
+      new_password: passwordSchema,
+      new_confirm_password: confirmChangePasswordSchema
     },
     ['body']
   )

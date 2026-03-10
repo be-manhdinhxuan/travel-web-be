@@ -4,3 +4,9 @@ export interface UpdateMeReqBody {
   phone?: string
   address?: string
 }
+
+export interface ChangePasswordReqBody {
+  password: string
+  new_password: string
+  new_confirm_password: string
+}

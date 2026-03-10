@@ -29,6 +29,8 @@ export const MESSAGES = {
   FORGOT_PASSWORD_TOKEN_IS_REQUIRED: 'Forgot password token is required',
   VERIFY_FORGOT_PASSWORD_SUCCESS: 'Verify forgot password success',
   RESET_PASSWORD_SUCCESS: 'Reset password success',
+  PASSWORD_IS_INCORRECT: 'Password is incorrect',
+  NEW_PASSWORD_MUST_BE_DIFFERENT: 'New password must be different',
 
   DATE_OF_BIRTH_MUST_BE_ISO8601: 'Ngày sinh phải tuân theo tiêu chuẩn ISO8601',
 

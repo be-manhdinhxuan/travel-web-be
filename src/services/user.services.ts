@@ -6,6 +6,7 @@ import streamifier from 'streamifier'
 import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
+import { hashPassword } from '~/utils/crypto'
 
 class UsersService {
   async getMe(user_id: string) {
@@ -77,6 +78,50 @@ class UsersService {
     )
 
     return avatar_url
+  }
+
+  async changePassword(user_id: string, password: string, new_password: string) {
+    const user = await databaseServices.users.findOne({ _id: new ObjectId(user_id) })
+
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    if (hashPassword(password) !== user.password) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.PASSWORD_IS_INCORRECT,
+        status: HTTP_STATUS.UNAUTHORIZED
+      })
+    }
+
+    if (hashPassword(new_password) === user.password) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.NEW_PASSWORD_MUST_BE_DIFFERENT,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    await databaseServices.users.updateOne(
+      { _id: new ObjectId(user_id) },
+      {
+        $set: {
+          password: hashPassword(new_password)
+        },
+        $currentDate: {
+          updated_at: true
+        }
+      }
+    )
+
+    // logout tất cả thiết bị
+    await databaseServices.refreshTokens.deleteMany({
+      user_id: new ObjectId(user_id)
+    })
+
+    return true
   }
 }
 
