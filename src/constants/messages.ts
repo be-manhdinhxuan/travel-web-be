@@ -48,5 +48,13 @@ export const MESSAGES = {
   LOGIN_SUCCESS: 'Login success',
   LOGOUT_SUCCESS: 'Logout success',
 
-  GET_ME_SUCCESS: 'Get me success'
+  GET_ME_SUCCESS: 'Get me success',
+  UPDATE_ME_SUCCESS: 'Update me success',
+  USER_NOT_VERIFIED: 'User not verified',
+
+  PHONE_MUST_BE_STRING: 'Phone must be string',
+  PHONE_IS_INVALID: 'Phone is invalid',
+  PHONE_EXISTED: 'Phone existed',
+  ADDRESS_MUST_BE_STRING: 'Address must be string',
+  ADDRESS_LENGTH_MUST_BE_FROM_1_TO_300: 'Address length must be from 1 to 300'
 } as const
