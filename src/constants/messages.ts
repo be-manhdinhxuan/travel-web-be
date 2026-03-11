@@ -77,5 +77,9 @@ export const MESSAGES = {
   UPDATE_USER_ROLE_SUCCESS: 'Update user role success',
   ROLE_IS_INVALID: 'Role is invalid',
   ROLE_IS_REQUIRED: 'Role is required',
-  CANNOT_UPDATE_OWN_ROLE: 'Cannot update own role'
+  CANNOT_UPDATE_OWN_ROLE: 'Cannot update own role',
+  STATUS_IS_REQUIRED: 'Status is required',
+  STATUS_IS_INVALID: 'Status is invalid',
+  UPDATE_USER_STATUS_SUCCESS: 'Update user status success',
+  CANNOT_DISABLE_OWN_ACCOUNT: 'Cannot disable own account'
 } as const

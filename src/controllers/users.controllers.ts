@@ -9,6 +9,8 @@ import {
   GetUserDetailReqParams,
   ToggleWishlistReqParams,
   UpdateMeReqBody,
+  UpdateStatusReqBody,
+  UpdateStatusReqParams,
   UpdateUserRoleReqBody,
   UpdateUserRoleReqParams
 } from '~/models/requests/User.requests'
@@ -125,6 +127,23 @@ export const updateUserRoleController = async (
 
   return res.json({
     message: MESSAGES.UPDATE_USER_ROLE_SUCCESS,
+    result
+  })
+}
+
+export const updateUserStatusController = async (
+  req: Request<UpdateStatusReqParams, any, UpdateStatusReqBody>,
+  res: Response
+) => {
+  const { id } = req.params
+  const { status } = req.body
+
+  const { user_id } = req.decoded_authorization as TokenPayload
+
+  const result = await usersService.updateUserStatus(user_id, id, status)
+
+  return res.json({
+    message: MESSAGES.UPDATE_USER_STATUS_SUCCESS,
     result
   })
 }

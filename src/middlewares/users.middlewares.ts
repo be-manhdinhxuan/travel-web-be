@@ -267,3 +267,28 @@ export const updateUserRoleValidator = validate(
     ['params', 'body']
   )
 )
+
+export const updateUserStatusValidator = validate(
+  checkSchema(
+    {
+      id: {
+        notEmpty: {
+          errorMessage: MESSAGES.USER_ID_IS_REQUIRED
+        },
+        isMongoId: {
+          errorMessage: MESSAGES.USER_ID_INVALID
+        }
+      },
+      status: {
+        notEmpty: {
+          errorMessage: MESSAGES.STATUS_IS_REQUIRED
+        },
+        isInt: {
+          options: { min: 0, max: 1 },
+          errorMessage: MESSAGES.STATUS_IS_INVALID
+        }
+      }
+    },
+    ['params', 'body']
+  )
+)

@@ -9,7 +9,8 @@ import {
   toggleWishlistController,
   updateAvatarController,
   updateMeController,
-  updateUserRoleController
+  updateUserRoleController,
+  updateUserStatusController
 } from '~/controllers/users.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
@@ -21,7 +22,8 @@ import {
   updateMeValidator,
   updateUserRoleValidator,
   userIdValidator,
-  verifiedUserValidator
+  verifiedUserValidator,
+  updateUserStatusValidator
 } from '~/middlewares/users.middlewares'
 import { UpdateMeReqBody } from '~/models/requests/User.requests'
 import { wrapRequestHandler } from '~/utils/handlers'
@@ -162,6 +164,23 @@ usersRouter.patch(
   authorize(UserRole.Admin),
   updateUserRoleValidator,
   wrapRequestHandler(updateUserRoleController)
+)
+
+/**
+ * Description: Update user status (Admin only)
+ * Path: /api/users/:id/status
+ * Method: PATCH
+ * Header: { Authorization: Bearer <access_token> }
+ * Params: { id: ObjectId }
+ * Body: { status: number } // 0: inactive, 1: active
+ */
+usersRouter.patch(
+  '/:id/status',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  updateUserStatusValidator,
+  wrapRequestHandler(updateUserStatusController)
 )
 
 export default usersRouter

@@ -37,3 +37,11 @@ export interface UpdateUserRoleReqParams extends ParamsDictionary {
 export interface UpdateUserRoleReqBody {
   role: number
 }
+
+export interface UpdateStatusReqParams extends ParamsDictionary {
+  id: string
+}
+
+export interface UpdateStatusReqBody {
+  status: number
+}

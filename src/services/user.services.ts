@@ -414,6 +414,54 @@ class UsersService {
       user: updatedUser
     }
   }
+
+  async updateUserStatus(admin_id: string, user_id: string, status: number) {
+    if (admin_id === user_id) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.CANNOT_DISABLE_OWN_ACCOUNT,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const user = await databaseServices.users.findOne({
+      _id: new ObjectId(user_id)
+    })
+
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const updatedUser = await databaseServices.users.findOneAndUpdate(
+      { _id: new ObjectId(user_id) },
+      {
+        $set: {
+          status
+        },
+        $currentDate: {
+          updated_at: true
+        }
+      },
+      {
+        returnDocument: 'after',
+        projection: {
+          password: 0,
+          email_verify_token: 0,
+          forgot_password_token: 0
+        }
+      }
+    )
+
+    await databaseServices.refreshTokens.deleteMany({
+      user_id: new ObjectId(user_id)
+    })
+
+    return {
+      user: updatedUser
+    }
+  }
 }
 
 const usersService = new UsersService()

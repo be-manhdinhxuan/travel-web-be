@@ -1,5 +1,5 @@
 import { config } from 'dotenv'
-import { TokenType, UserRole, UserVerifyStatus } from '~/constants/enums'
+import { TokenType, UserRole, UserStatus, UserVerifyStatus } from '~/constants/enums'
 import User from '~/models/schemas/User.schema'
 import { signToken } from '~/utils/jwt'
 import { StringValue } from 'ms'
@@ -16,12 +16,23 @@ import HTTP_STATUS from '~/constants/httpStatus'
 config()
 
 class AuthService {
-  private signAccessToken({ user_id, role, verify }: { user_id: string; role: UserRole; verify: UserVerifyStatus }) {
+  private signAccessToken({
+    user_id,
+    role,
+    verify,
+    status
+  }: {
+    user_id: string
+    role: UserRole
+    verify: UserVerifyStatus
+    status: UserStatus
+  }) {
     return signToken({
       payload: {
         user_id,
         role,
         verify,
+        status,
         token_type: TokenType.AccessToken
       },
       privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
@@ -31,12 +42,23 @@ class AuthService {
     })
   }
 
-  private signRefreshToken({ user_id, role, verify }: { user_id: string; role: UserRole; verify: UserVerifyStatus }) {
+  private signRefreshToken({
+    user_id,
+    role,
+    verify,
+    status
+  }: {
+    user_id: string
+    role: UserRole
+    verify: UserVerifyStatus
+    status: UserStatus
+  }) {
     return signToken({
       payload: {
         user_id,
         role,
         verify,
+        status,
         token_type: TokenType.RefreshToken
       },
       privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
@@ -60,12 +82,13 @@ class AuthService {
     })
   }
 
-  private signForgotPasswordToken({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
+  private signForgotPasswordToken({ user_id, verify, status }: { user_id: string; verify: UserVerifyStatus; status: UserStatus }) {
     return signToken({
       payload: {
         user_id,
         token_type: TokenType.ForgotPasswordToken,
-        verify
+        verify,
+        status
       },
       privateKey: process.env.JWT_SECRET_FORGOT_PASSWORD_TOKEN as string,
       options: {
@@ -77,15 +100,17 @@ class AuthService {
   private signAccessAndRefreshToken({
     user_id,
     role,
-    verify
+    verify,
+    status
   }: {
     user_id: string
     role: UserRole
     verify: UserVerifyStatus
+    status: UserStatus
   }) {
     return Promise.all([
-      this.signAccessToken({ user_id, role, verify }),
-      this.signRefreshToken({ user_id, role, verify })
+      this.signAccessToken({ user_id, role, verify, status }),
+      this.signRefreshToken({ user_id, role, verify, status })
     ])
   }
 
@@ -116,7 +141,8 @@ class AuthService {
     const [access_token, refresh_token] = await this.signAccessAndRefreshToken({
       user_id: user_id.toString(),
       role: UserRole.User,
-      verify: UserVerifyStatus.Unverified
+      verify: UserVerifyStatus.Unverified,
+      status: UserStatus.Active
     })
     await databaseServices.refreshTokens.insertOne(
       new RefreshToken({ user_id: new ObjectId(user_id), token: refresh_token })
@@ -167,7 +193,8 @@ class AuthService {
     const [access_token, refresh_token] = await this.signAccessAndRefreshToken({
       user_id,
       role: UserRole.User,
-      verify: UserVerifyStatus.Verified
+      verify: UserVerifyStatus.Verified,
+      status: UserStatus.Active
     })
 
     await databaseServices.refreshTokens.insertOne(
@@ -226,11 +253,22 @@ class AuthService {
     }
   }
 
-  async login({ user_id, role, verify }: { user_id: string; role: UserRole; verify: UserVerifyStatus }) {
+  async login({
+    user_id,
+    role,
+    verify,
+    status
+  }: {
+    user_id: string
+    role: UserRole
+    verify: UserVerifyStatus
+    status: UserStatus
+  }) {
     const [access_token, refresh_token] = await this.signAccessAndRefreshToken({
       user_id,
       role,
-      verify
+      verify,
+      status
     })
     await databaseServices.refreshTokens.insertOne(
       new RefreshToken({ user_id: new ObjectId(user_id), token: refresh_token })
@@ -253,16 +291,18 @@ class AuthService {
     user_id,
     role,
     verify,
+    status,
     refresh_token
   }: {
     user_id: string
     role: UserRole
     verify: UserVerifyStatus
+    status: UserStatus
     refresh_token: string
   }) {
     const [new_access_token, new_refresh_token] = await Promise.all([
-      this.signAccessToken({ user_id, role, verify }),
-      this.signRefreshToken({ user_id, role, verify })
+      this.signAccessToken({ user_id, role, verify, status }),
+      this.signRefreshToken({ user_id, role, verify, status })
     ])
     await databaseServices.refreshTokens.deleteOne({ token: refresh_token })
 
@@ -275,10 +315,11 @@ class AuthService {
     }
   }
 
-  async forgotPassword({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
+  async forgotPassword({ user_id, verify, status }: { user_id: string; verify: UserVerifyStatus; status: UserStatus }) {
     const forgot_password_token = await this.signForgotPasswordToken({
       user_id,
-      verify
+      verify,
+      status
     })
 
     const user = await databaseServices.users.findOneAndUpdate(
@@ -300,7 +341,7 @@ class AuthService {
 
   async resetPassword(user_id: string, password: string) {
     databaseServices.users.updateOne(
-      {_id: new ObjectId(user_id)},
+      { _id: new ObjectId(user_id) },
       {
         $set: {
           forgot_password_token: '',
