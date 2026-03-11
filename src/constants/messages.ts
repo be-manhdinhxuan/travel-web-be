@@ -73,4 +73,9 @@ export const MESSAGES = {
   USER_ID_IS_REQUIRED: 'User id is required',
   USER_ID_IS_INVALID: 'User id is invalid',
   GET_USER_DETAIL_SUCCESS: 'Get user detail success',
+  USER_ID_INVALID: 'User id is invalid',
+  UPDATE_USER_ROLE_SUCCESS: 'Update user role success',
+  ROLE_IS_INVALID: 'Role is invalid',
+  ROLE_IS_REQUIRED: 'Role is required',
+  CANNOT_UPDATE_OWN_ROLE: 'Cannot update own role'
 } as const

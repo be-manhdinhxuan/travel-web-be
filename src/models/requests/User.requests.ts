@@ -1,4 +1,5 @@
 import { ParamsDictionary } from 'express-serve-static-core'
+import { UserRole } from '~/constants/enums'
 
 export interface UpdateMeReqBody {
   full_name?: string
@@ -27,4 +28,12 @@ export interface GetUsersReqQuery {
 
 export interface GetUserDetailReqParams extends ParamsDictionary {
   user_id: string
+}
+
+export interface UpdateUserRoleReqParams extends ParamsDictionary {
+  id: string
+}
+
+export interface UpdateUserRoleReqBody {
+  role: number
 }

@@ -199,7 +199,6 @@ export const tourIdValidator = validate(
   checkSchema(
     {
       tour_id: {
-        in: ['params'],
         notEmpty: {
           errorMessage: MESSAGES.TOUR_ID_IS_REQUIRED
         },
@@ -232,7 +231,6 @@ export const userIdValidator = validate(
   checkSchema(
     {
       user_id: {
-        in: ['params'],
         notEmpty: {
           errorMessage: MESSAGES.USER_ID_IS_REQUIRED
         },
@@ -242,5 +240,30 @@ export const userIdValidator = validate(
       }
     },
     ['params']
+  )
+)
+
+export const updateUserRoleValidator = validate(
+  checkSchema(
+    {
+      id: {
+        notEmpty: {
+          errorMessage: MESSAGES.USER_ID_IS_REQUIRED
+        },
+        isMongoId: {
+          errorMessage: MESSAGES.USER_ID_INVALID
+        }
+      },
+      role: {
+        notEmpty: {
+          errorMessage: MESSAGES.ROLE_IS_REQUIRED
+        },
+        isInt: {
+          options: { min: 0, max: 1 },
+          errorMessage: MESSAGES.ROLE_IS_INVALID
+        }
+      }
+    },
+    ['params', 'body']
   )
 )

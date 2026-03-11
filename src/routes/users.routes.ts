@@ -8,7 +8,8 @@ import {
   getUsersController,
   toggleWishlistController,
   updateAvatarController,
-  updateMeController
+  updateMeController,
+  updateUserRoleController
 } from '~/controllers/users.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
@@ -18,6 +19,7 @@ import {
   changePasswordValidator,
   tourIdValidator,
   updateMeValidator,
+  updateUserRoleValidator,
   userIdValidator,
   verifiedUserValidator
 } from '~/middlewares/users.middlewares'
@@ -143,6 +145,23 @@ usersRouter.get(
   authorize(UserRole.Admin),
   userIdValidator,
   wrapRequestHandler(getUserDetailController)
+)
+
+/**
+ * Description: Update user role (Admin only)
+ * Path: /api/users/:id/role
+ * Method: PATCH
+ * Header: { Authorization: Bearer <access_token> }
+ * Params: { id: ObjectId }
+ * Body: { role: number } // 0: user, 1: admin
+ */
+usersRouter.patch(
+  '/:id/role',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  updateUserRoleValidator,
+  wrapRequestHandler(updateUserRoleController)
 )
 
 export default usersRouter
