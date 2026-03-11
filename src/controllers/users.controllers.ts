@@ -61,10 +61,7 @@ export const changePasswordController = async (
   })
 }
 
-export const toggleWishlistController = async (
-  req: Request< ToggleWishlistReqParams>,
-  res: Response
-) => {
+export const toggleWishlistController = async (req: Request<ToggleWishlistReqParams>, res: Response) => {
   const { user_id } = req.decoded_authorization as TokenPayload
   const { tour_id } = req.params
 
@@ -82,5 +79,13 @@ export const getMyWishlistController = async (req: Request, res: Response, next:
   return res.json({
     message: MESSAGES.GET_MY_WISHLIST_SUCCESS,
     result: user
+  })
+}
+
+export const getUsersController = async (req: Request, res: Response, next: NextFunction) => {
+  const result = await usersService.getUsers(req.query)
+  return res.json({
+    message: 'Get users success',
+    result
   })
 }

@@ -1,12 +1,15 @@
 import { Router } from 'express'
+import { UserRole } from '~/constants/enums'
 import {
   changePasswordController,
   getMeController,
   getMyWishlistController,
+  getUsersController,
   toggleWishlistController,
   updateAvatarController,
   updateMeController
 } from '~/controllers/users.controllers'
+import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { filterMiddleware } from '~/middlewares/common.middlewares'
 import { uploadAvatar } from '~/middlewares/uploads.middlewares'
@@ -102,6 +105,26 @@ usersRouter.get(
   accessTokenValidator,
   verifiedUserValidator,
   wrapRequestHandler(getMyWishlistController)
+)
+
+/**
+ * Description: Get users (Admin only). Search, filter and paginate users.
+ * Path: /api/users
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ * Query:
+ *   page (number, optional, default: 1)
+ *   limit (number, optional, default: 20)
+ *   keyword (string, optional) — search by name or email
+ *   role (number, optional)
+ *   status (number, optional)
+ */
+usersRouter.get(
+  '',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  wrapRequestHandler(getUsersController)
 )
 
 export default usersRouter

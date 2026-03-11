@@ -66,5 +66,7 @@ export const MESSAGES = {
   TOUR_ID_IS_INVALID: 'Tour id is invalid',
   TOUR_NOT_FOUND: 'Tour not found',
 
-  GET_MY_WISHLIST_SUCCESS: 'Get my wishlist success'
+  GET_MY_WISHLIST_SUCCESS: 'Get my wishlist success',
+
+  NOT_AUTHORIZED: 'Not authorized'
 } as const

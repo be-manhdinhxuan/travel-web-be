@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
 import databaseServices from './database.services'
-import { UpdateMeReqBody } from '~/models/requests/User.requests'
+import { GetUsersReqQuery, UpdateMeReqBody } from '~/models/requests/User.requests'
 import cloudinary, { getPublicIdFromUrl } from '~/utils/cloudinary'
 import streamifier from 'streamifier'
 import { ErrorWithStatus } from '~/models/Errors'
@@ -215,6 +215,58 @@ class UsersService {
 
     return {
       tours: result[0].tours
+    }
+  }
+
+  async getUsers(query: GetUsersReqQuery) {
+    const page = Number(query.page) || 1
+    const limit = Number(query.limit) || 20
+    const keyword = query.keyword || ''
+    const role = query.role ? Number(query.role) : null
+    const status = query.status ? Number(query.status) : null
+
+    const skip = (page - 1) * limit
+
+    const filter: any = {}
+
+    if (keyword) {
+      filter.$or = [{ full_name: { $regex: keyword, $options: 'i' } }, { email: { $regex: keyword, $options: 'i' } }]
+    }
+
+    if (role !== null) {
+      filter.role = role
+    }
+
+    if (status !== null) {
+      filter.verify = status
+    }
+
+    const [users, total] = await Promise.all([
+      databaseServices.users
+        .find(filter, {
+          projection: {
+            password: 0,
+            email_verify_token: 0,
+            forgot_password_token: 0
+          }
+        })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+
+      databaseServices.users.countDocuments(filter)
+    ])
+
+    const total_pages = Math.ceil(total / limit)
+
+    return {
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages
+      }
     }
   }
 }

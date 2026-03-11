@@ -16,3 +16,11 @@ export interface ChangePasswordReqBody {
 export interface ToggleWishlistReqParams extends ParamsDictionary {
   tour_id: string
 }
+
+export interface GetUsersReqQuery {
+  page?: string
+  limit?: string
+  keyword?: string
+  role?: string
+  status?: string
+}
