@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { ObjectId } from 'mongodb'
-import { UserVerifyStatus } from '~/constants/enums'
+import { UserStatus, UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
 import {
@@ -53,7 +53,12 @@ export const resendVerifyEmailController = async (req: Request, res: Response) =
 export const loginController = async (req: Request<ParamsDictionary, any, LoginReqBody>, res: Response) => {
   const user = req.user as User
   const user_id = user._id as ObjectId
-  const result = await authsService.login({ user_id: user_id.toString(), role: user.role, verify: user.verify })
+  const result = await authsService.login({
+    user_id: user_id.toString(),
+    role: user.role,
+    verify: user.verify,
+    status: user.status
+  })
   return res.json({
     message: MESSAGES.LOGIN_SUCCESS,
     result
@@ -74,8 +79,8 @@ export const refreshTokenController = async (
   res: Response
 ) => {
   const { refresh_token } = req.body
-  const { user_id, role, verify } = req.decoded_refresh_token as TokenPayload
-  const result = await authsService.refreshToken({ user_id, role, verify, refresh_token })
+  const { user_id, role, verify, status } = req.decoded_refresh_token as TokenPayload
+  const result = await authsService.refreshToken({ user_id, role, verify, status, refresh_token })
   return res.json({
     message: MESSAGES.REFRESH_TOKEN_SUCCESS,
     result
@@ -88,7 +93,11 @@ export const forgotPasswordController = async (
   next: NextFunction
 ) => {
   const { _id, verify } = req.user as User
-  const result = await authsService.forgotPassword({ user_id: (_id as ObjectId).toString(), verify })
+  const result = await authsService.forgotPassword({
+    user_id: (_id as ObjectId).toString(),
+    verify,
+    status: UserStatus.Active
+  })
   return res.json({
     message: MESSAGES.FORGOT_PASSWORD_SUCCESS,
     result

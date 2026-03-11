@@ -11,6 +11,7 @@ import { JsonWebTokenError } from 'jsonwebtoken'
 import { hashPassword } from '~/utils/crypto'
 import databaseServices from '~/services/database.services'
 import { ObjectId } from 'mongodb'
+import { UserStatus } from '~/constants/enums'
 
 const nameSchema: ParamSchema = {
   notEmpty: {
@@ -197,6 +198,14 @@ export const accessTokenValidator = validate(
                 status: HTTP_STATUS.UNAUTHORIZED
               })
             }
+
+            if ((req as Request).decoded_authorization?.status === UserStatus.Banned) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.ACCOUNT_BANNED,
+                status: HTTP_STATUS.FORBIDDEN
+              })
+            }
+
             return true
           }
         }
@@ -301,6 +310,12 @@ export const loginValidator = validate(
             if (user === null) {
               throw new Error(MESSAGES.EMAIL_OR_PASSWORD_INCORRECT)
             }
+            if (user.status === UserStatus.Banned) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.ACCOUNT_BANNED,
+                status: HTTP_STATUS.FORBIDDEN
+              })
+            }
             req.user = user
             return true
           }
@@ -351,6 +366,12 @@ export const forgotPasswordValidator = validate(
             const user = await databaseServices.users.findOne({ email: value })
             if (user === null) {
               throw new Error(MESSAGES.USER_NOT_FOUND)
+            }
+            if (user.status === UserStatus.Banned) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.ACCOUNT_BANNED,
+                status: HTTP_STATUS.FORBIDDEN
+              })
             }
             req.user = user
             return true

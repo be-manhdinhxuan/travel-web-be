@@ -81,5 +81,6 @@ export const MESSAGES = {
   STATUS_IS_REQUIRED: 'Status is required',
   STATUS_IS_INVALID: 'Status is invalid',
   UPDATE_USER_STATUS_SUCCESS: 'Update user status success',
-  CANNOT_DISABLE_OWN_ACCOUNT: 'Cannot disable own account'
+  CANNOT_DISABLE_OWN_ACCOUNT: 'Cannot disable own account',
+  ACCOUNT_BANNED: 'Account is banned'
 } as const
