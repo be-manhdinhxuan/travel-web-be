@@ -4,6 +4,7 @@ import {
   changePasswordController,
   getMeController,
   getMyWishlistController,
+  getUserDetailController,
   getUsersController,
   toggleWishlistController,
   updateAvatarController,
@@ -17,6 +18,7 @@ import {
   changePasswordValidator,
   tourIdValidator,
   updateMeValidator,
+  userIdValidator,
   verifiedUserValidator
 } from '~/middlewares/users.middlewares'
 import { UpdateMeReqBody } from '~/models/requests/User.requests'
@@ -125,6 +127,22 @@ usersRouter.get(
   verifiedUserValidator,
   authorize(UserRole.Admin),
   wrapRequestHandler(getUsersController)
+)
+
+/**
+ * Description: Get user detail (Admin only)
+ * Path: /api/users/:user_id
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ * Params: { user_id: ObjectId }
+ */
+usersRouter.get(
+  '/:user_id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  userIdValidator,
+  wrapRequestHandler(getUserDetailController)
 )
 
 export default usersRouter

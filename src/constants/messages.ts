@@ -68,5 +68,9 @@ export const MESSAGES = {
 
   GET_MY_WISHLIST_SUCCESS: 'Get my wishlist success',
 
-  NOT_AUTHORIZED: 'Not authorized'
+  NOT_AUTHORIZED: 'Not authorized',
+
+  USER_ID_IS_REQUIRED: 'User id is required',
+  USER_ID_IS_INVALID: 'User id is invalid',
+  GET_USER_DETAIL_SUCCESS: 'Get user detail success',
 } as const

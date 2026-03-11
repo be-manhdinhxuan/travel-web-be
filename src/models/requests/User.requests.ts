@@ -24,3 +24,7 @@ export interface GetUsersReqQuery {
   role?: string
   status?: string
 }
+
+export interface GetUserDetailReqParams extends ParamsDictionary {
+  user_id: string
+}

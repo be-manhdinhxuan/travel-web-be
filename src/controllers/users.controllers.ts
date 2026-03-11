@@ -4,7 +4,12 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import { TokenPayload } from '~/models/requests/Auth.requests'
-import { ChangePasswordReqBody, ToggleWishlistReqParams, UpdateMeReqBody } from '~/models/requests/User.requests'
+import {
+  ChangePasswordReqBody,
+  GetUserDetailReqParams,
+  ToggleWishlistReqParams,
+  UpdateMeReqBody
+} from '~/models/requests/User.requests'
 import usersService from '~/services/user.services'
 
 export const getMeController = async (req: Request, res: Response, next: NextFunction) => {
@@ -86,6 +91,21 @@ export const getUsersController = async (req: Request, res: Response, next: Next
   const result = await usersService.getUsers(req.query)
   return res.json({
     message: 'Get users success',
+    result
+  })
+}
+
+export const getUserDetailController = async (
+  req: Request<GetUserDetailReqParams>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.params
+
+  const result = await usersService.getUserDetail(user_id)
+
+  return res.json({
+    message: MESSAGES.GET_USER_DETAIL_SUCCESS,
     result
   })
 }

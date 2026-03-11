@@ -269,6 +269,103 @@ class UsersService {
       }
     }
   }
+
+  async getUserDetail(user_id: string) {
+    const result = await databaseServices.users
+      .aggregate([
+        {
+          $match: {
+            _id: new ObjectId(user_id)
+          }
+        },
+
+        {
+          $lookup: {
+            from: 'bookings',
+            let: { userId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ['$user_id', '$$userId']
+                  }
+                }
+              },
+
+              {
+                $sort: {
+                  created_at: -1
+                }
+              },
+
+              {
+                $limit: 5
+              },
+
+              {
+                $lookup: {
+                  from: 'tours',
+                  localField: 'tour_id',
+                  foreignField: '_id',
+                  as: 'tour'
+                }
+              },
+
+              {
+                $unwind: {
+                  path: '$tour',
+                  preserveNullAndEmptyArrays: true
+                }
+              },
+
+              {
+                $project: {
+                  _id: 1,
+                  tour_id: 1,
+                  price: 1,
+                  created_at: 1,
+                  'tour._id': 1,
+                  'tour.name': 1,
+                  'tour.slug': 1,
+                  'tour.images': { $slice: ['$tour.images', 1] }
+                }
+              }
+            ],
+            as: 'recent_bookings'
+          }
+        },
+
+        {
+          $project: {
+            password: 0,
+            email_verify_token: 0,
+            forgot_password_token: 0
+          }
+        }
+      ])
+      .toArray()
+
+    if (!result.length) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const user = result[0]
+
+    return {
+      user: {
+        _id: user._id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        verify: user.verify,
+        created_at: user.created_at
+      },
+      recent_bookings: user.recent_bookings
+    }
+  }
 }
 
 const usersService = new UsersService()

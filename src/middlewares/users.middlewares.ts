@@ -227,3 +227,20 @@ export const tourIdValidator = validate(
     ['params']
   )
 )
+
+export const userIdValidator = validate(
+  checkSchema(
+    {
+      user_id: {
+        in: ['params'],
+        notEmpty: {
+          errorMessage: MESSAGES.USER_ID_IS_REQUIRED
+        },
+        isMongoId: {
+          errorMessage: MESSAGES.USER_ID_IS_INVALID
+        }
+      }
+    },
+    ['params']
+  )
+)
