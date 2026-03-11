@@ -160,6 +160,63 @@ class UsersService {
       wishlist: updatedUser?.wishlist
     }
   }
+
+  async getMyWishlist(user_id: string) {
+    const result = await databaseServices.users
+      .aggregate([
+        {
+          $match: {
+            _id: new ObjectId(user_id)
+          }
+        },
+        {
+          $lookup: {
+            from: 'tours',
+            let: { wishlist: '$wishlist' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $in: ['$_id', '$$wishlist']
+                  }
+                }
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  slug: 1,
+                  destination: 1,
+                  duration_days: 1,
+                  duration_nights: 1,
+                  images: { $slice: ['$images', 1] },
+                  flash_sale: 1
+                }
+              }
+            ],
+            as: 'tours'
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            tours: 1
+          }
+        }
+      ])
+      .toArray()
+
+    if (!result.length) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    return {
+      tours: result[0].tours
+    }
+  }
 }
 
 const usersService = new UsersService()

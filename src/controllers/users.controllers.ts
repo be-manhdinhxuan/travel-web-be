@@ -4,7 +4,7 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import { TokenPayload } from '~/models/requests/Auth.requests'
-import { ChangePasswordReqBody, UpdateMeReqBody } from '~/models/requests/User.requests'
+import { ChangePasswordReqBody, ToggleWishlistReqParams, UpdateMeReqBody } from '~/models/requests/User.requests'
 import usersService from '~/services/user.services'
 
 export const getMeController = async (req: Request, res: Response, next: NextFunction) => {
@@ -62,7 +62,7 @@ export const changePasswordController = async (
 }
 
 export const toggleWishlistController = async (
-  req: Request<ParamsDictionary & { tour_id: string }>,
+  req: Request< ToggleWishlistReqParams>,
   res: Response
 ) => {
   const { user_id } = req.decoded_authorization as TokenPayload
@@ -73,5 +73,14 @@ export const toggleWishlistController = async (
   return res.json({
     message: 'Toggle wishlist success',
     result
+  })
+}
+
+export const getMyWishlistController = async (req: Request, res: Response, next: NextFunction) => {
+  const { user_id } = req.decoded_authorization as TokenPayload
+  const user = await usersService.getMyWishlist(user_id)
+  return res.json({
+    message: MESSAGES.GET_MY_WISHLIST_SUCCESS,
+    result: user
   })
 }

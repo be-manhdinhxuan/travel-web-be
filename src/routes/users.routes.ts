@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   changePasswordController,
   getMeController,
+  getMyWishlistController,
   toggleWishlistController,
   updateAvatarController,
   updateMeController
@@ -88,6 +89,19 @@ usersRouter.post(
   verifiedUserValidator,
   tourIdValidator,
   wrapRequestHandler(toggleWishlistController)
+)
+
+/**
+ * Description: Get my wishlist tours
+ * Path: /me/wishlist
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token>}
+ */
+usersRouter.get(
+  '/me/wishlist',
+  accessTokenValidator,
+  verifiedUserValidator,
+  wrapRequestHandler(getMyWishlistController)
 )
 
 export default usersRouter
