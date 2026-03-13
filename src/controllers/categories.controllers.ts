@@ -1,7 +1,15 @@
 import { Request, Response } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
+import { Token } from 'nodemailer/lib/xoauth2'
+import { UserRole } from '~/constants/enums'
 import { MESSAGES } from '~/constants/messages'
-import { CreateCategoryReqBody, GetDetailCategoryReqParams } from '~/models/requests/Category.request'
+import { TokenPayload } from '~/models/requests/Auth.requests'
+import {
+  CreateCategoryReqBody,
+  GetDetailCategoryReqParams,
+  UpdateCategoryReqBody,
+  UpdateCategoryReqParams
+} from '~/models/requests/Category.request'
 import categoriesService from '~/services/category.services'
 
 export const getCategoriesController = async (req: Request, res: Response) => {
@@ -17,15 +25,18 @@ export const getDetailCategoryController = async (
   res: Response
 ) => {
   const { id } = req.params
-  const category = await categoriesService.getDetailCategory(id as string)
+  const { role } = req.decoded_authorization as TokenPayload
+  const category = await categoriesService.getDetailCategory(id as string, role)
   return res.json({
     message: MESSAGES.GET_DETAIL_CATEGORY_SUCCESS,
     result: { category }
   })
 }
 
-
-export const createCategoryController = async (req: Request<any, any, CreateCategoryReqBody>, res: Response) => {
+export const createCategoryController = async (
+  req: Request<ParamsDictionary, any, CreateCategoryReqBody>,
+  res: Response
+) => {
   const file = req.file
   const body = req.body
 
@@ -33,6 +44,22 @@ export const createCategoryController = async (req: Request<any, any, CreateCate
 
   return res.status(201).json({
     message: MESSAGES.CREATE_CATEGORY_SUCCESS,
+    result
+  })
+}
+
+export const updateCategoryController = async (
+  req: Request<{ id: string }, any, UpdateCategoryReqBody>,
+  res: Response
+) => {
+  const { id } = req.params
+  const body = req.body
+  const file = req.file
+
+  const result = await categoriesService.updateCategory(id, body, file)
+
+  return res.json({
+    message: MESSAGES.UPDATE_CATEGORY_SUCCESS,
     result
   })
 }

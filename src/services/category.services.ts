@@ -1,13 +1,16 @@
 import slugify from 'slugify'
-import { CreateCategoryReqBody } from '~/models/requests/Category.request'
+import { CreateCategoryReqBody, UpdateCategoryReqBody } from '~/models/requests/Category.request'
 import databaseServices from './database.services'
 import { uploadImageToCloudinary } from '~/utils/uploadImageToCloudinary'
-import { ObjectId } from 'mongodb'
+import { Filter, ObjectId } from 'mongodb'
 import { create } from 'lodash'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
 import Category from '~/models/schemas/Category.schema'
+import cloudinary from '~/utils/cloudinary'
+import { generateUniqueSlug } from '~/utils/generateSlug'
+import { UserRole } from '~/constants/enums'
 
 class CategoriesService {
   async getCategories() {
@@ -29,11 +32,19 @@ class CategoriesService {
     }
   }
 
-  async getDetailCategory(id: string) {
-    const category = await databaseServices.categories.findOne(
-      { _id: new ObjectId(id) },
-      { projection: { created_at: 0, updated_at: 0 } }
-    )
+  async getDetailCategory(id: string, role: UserRole) {
+    const filter: Filter<Category> = { _id: new ObjectId(id) }
+    if (role !== UserRole.Admin) {
+      filter.is_active = true
+    }
+    const category = await databaseServices.categories.findOne(filter)
+
+    if (!category) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.CATEGORY_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
 
     return category
   }
@@ -46,9 +57,7 @@ class CategoriesService {
       thumbnail = uploadResult.secure_url
     }
 
-    const slug = slugify(payload.name, {
-      lower: true
-    })
+    const slug = await generateUniqueSlug(payload.name)
 
     const category = new Category({
       name: payload.name,
@@ -74,6 +83,58 @@ class CategoriesService {
         ...category,
         _id: result.insertedId
       }
+    }
+  }
+
+  async updateCategory(id: string, payload: UpdateCategoryReqBody, file?: Express.Multer.File) {
+    const category: any = await databaseServices.categories.findOne({
+      _id: new ObjectId(id)
+    })
+
+    const updateData: Partial<Category> = {}
+
+    // update name + slug
+    if (payload.name) {
+      updateData.name = payload.name
+      updateData.slug = await generateUniqueSlug(payload.name)
+    }
+
+    // description
+    if (payload.description !== undefined) {
+      updateData.description = payload.description
+    }
+
+    // active status
+    if (payload.is_active !== undefined) {
+      updateData.is_active = payload.is_active === true
+    }
+
+    // upload thumbnail mới
+    if (file) {
+      const upload: any = await uploadImageToCloudinary(file.buffer, 'categories')
+
+      updateData.thumbnail = upload.secure_url
+
+      // xóa ảnh cũ
+      if (category.thumbnail) {
+        const publicId = category.thumbnail.split('/').slice(-2).join('/').split('.')[0]
+
+        await cloudinary.uploader.destroy(publicId)
+      }
+    }
+
+    updateData.updated_at = new Date()
+
+    const updatedCategory = await databaseServices.categories.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      {
+        returnDocument: 'after'
+      }
+    )
+
+    return {
+      category: updatedCategory
     }
   }
 }

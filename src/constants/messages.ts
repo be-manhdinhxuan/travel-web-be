@@ -94,5 +94,7 @@ export const MESSAGES = {
   CATEGORY_ID_IS_REQUIRED: 'Category id is required',
   CATEGORY_ID_INVALID: 'Category id is invalid',
   GET_DETAIL_CATEGORY_SUCCESS: 'Get detail category success',
-  CATEGORY_NOT_FOUND: 'Category not found'
+  CATEGORY_NOT_FOUND: 'Category not found',
+  UPDATE_CATEGORY_SUCCESS: 'Update category success',
+  CATEGORY_STATUS_IS_INVALID: 'Category status is invalid'
 } as const

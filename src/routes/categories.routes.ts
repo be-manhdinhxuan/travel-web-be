@@ -4,11 +4,17 @@ import { UserRole } from '~/constants/enums'
 import {
   createCategoryController,
   getCategoriesController,
-  getDetailCategoryController
+  getDetailCategoryController,
+  updateCategoryController
 } from '~/controllers/categories.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
-import { createCategoryValidator, getDetailCategoryValidator } from '~/middlewares/categories.middlewares'
+import {
+  createCategoryValidator,
+  getDetailCategoryValidator,
+  optionalAccessTokenValidator,
+  updateCategoryValidator
+} from '~/middlewares/categories.middlewares'
 import { uploadImage } from '~/middlewares/uploads.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
@@ -28,7 +34,12 @@ categoriesRouter.get('', wrapRequestHandler(getCategoriesController))
  * Method: GET
  * Param: id - category id
  */
-categoriesRouter.get('/:id', getDetailCategoryValidator, wrapRequestHandler(getDetailCategoryController))
+categoriesRouter.get(
+  '/:id',
+  optionalAccessTokenValidator,
+  getDetailCategoryValidator,
+  wrapRequestHandler(getDetailCategoryController)
+)
 
 /**
  * Description: Create a new category
@@ -45,6 +56,23 @@ categoriesRouter.post(
   uploadImage.single('thumbnail'),
   createCategoryValidator,
   wrapRequestHandler(createCategoryController)
+)
+
+/**
+ * Description: Update category
+ * Path: /:id
+ * Method: PUT
+ * Header: { Authorization: Bearer <access_token>}
+ * Body: {name: string, description?: string, thumbnail: file}
+ */
+categoriesRouter.put(
+  '/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  uploadImage.single('thumbnail'),
+  updateCategoryValidator,
+  wrapRequestHandler(updateCategoryController)
 )
 
 export default categoriesRouter
