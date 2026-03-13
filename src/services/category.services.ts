@@ -10,6 +10,27 @@ import { MESSAGES } from '~/constants/messages'
 import Category from '~/models/schemas/Category.schema'
 
 class CategoriesService {
+  async getCategories() {
+    const categories = await databaseServices.categories
+      .find(
+        { is_active: true },
+        {
+          projection: {
+            name: 1,
+            slug: 1,
+            thumbnail: 1
+          }
+        }
+      )
+      .sort({ created_at: -1 })
+      .toArray()
+    return {
+      categories
+    }
+  }
+
+
+
   async createCategory(payload: CreateCategoryReqBody, file?: Express.Multer.File) {
     let thumbnail = ''
 

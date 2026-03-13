@@ -89,5 +89,10 @@ export const MESSAGES = {
   CATEGORY_NAME_LENGTH_INVALID: 'Category name length must be from 1 to 200',
   DESCRIPTION_MUST_BE_STRING: 'Description must be a string',
   CREATE_CATEGORY_SUCCESS: 'Create category success',
-  CATEGORY_ALREADY_EXISTS: 'Category already exists'
+  CATEGORY_ALREADY_EXISTS: 'Category already exists',
+  GET_CATEGORIES_SUCCESS: 'Get categories success',
+  CATEGORY_ID_IS_REQUIRED: 'Category id is required',
+  CATEGORY_ID_INVALID: 'Category id is invalid',
+  GET_DETAIL_CATEGORY_SUCCESS: 'Get detail category success',
+  CATEGORY_NOT_FOUND: 'Category not found'
 } as const

@@ -1,12 +1,20 @@
 import { Request, Response } from 'express'
+import { ParamsDictionary } from 'express-serve-static-core'
 import { MESSAGES } from '~/constants/messages'
-import { CreateCategoryReqBody } from '~/models/requests/Category.request'
+import { CreateCategoryReqBody, GetDetailCategoryReqParams } from '~/models/requests/Category.request'
 import categoriesService from '~/services/category.services'
 
-export const createCategoryController = async (
-  req: Request<any, any, CreateCategoryReqBody>,
-  res: Response
-) => {
+export const getCategoriesController = async (req: Request, res: Response) => {
+  const result = await categoriesService.getCategories()
+  return res.json({
+    message: MESSAGES.GET_CATEGORIES_SUCCESS,
+    result
+  })
+}
+
+
+
+export const createCategoryController = async (req: Request<any, any, CreateCategoryReqBody>, res: Response) => {
   const file = req.file
   const body = req.body
 

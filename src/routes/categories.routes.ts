@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { create } from 'lodash'
 import { UserRole } from '~/constants/enums'
-import { createCategoryController } from '~/controllers/categories.controllers'
+import { createCategoryController, getCategoriesController } from '~/controllers/categories.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { createCategoryValidator } from '~/middlewares/categories.middlewares'
@@ -12,8 +12,15 @@ import { wrapRequestHandler } from '~/utils/handlers'
 const categoriesRouter = Router()
 
 /**
+ * Description: Get categories
+ * Path:
+ * Method: GET
+ */
+categoriesRouter.get('', wrapRequestHandler(getCategoriesController))
+
+/**
  * Description: Create a new category
- * Path: /categories
+ * Path:
  * Method: POST
  * Header: { Authorization: Bearer <access_token>}
  * Body: {name: string, description?: string, thumbnail: file}
