@@ -10,7 +10,7 @@ interface CouponType {
   used_count?: number
   used_by?: ObjectId[]
   expires_at: Date
-  is_active?: Boolean
+  is_active?: boolean
   created_at?: Date
   updated_at?: Date
 }
@@ -24,7 +24,7 @@ export default class Coupon {
   used_count: number
   used_by: ObjectId[]
   expires_at: Date
-  is_active: Boolean
+  is_active: boolean
   created_at: Date
   updated_at: Date
   constructor(coupon: CouponType) {

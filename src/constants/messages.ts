@@ -82,5 +82,12 @@ export const MESSAGES = {
   STATUS_IS_INVALID: 'Status is invalid',
   UPDATE_USER_STATUS_SUCCESS: 'Update user status success',
   CANNOT_DISABLE_OWN_ACCOUNT: 'Cannot disable own account',
-  ACCOUNT_BANNED: 'Account is banned'
+  ACCOUNT_BANNED: 'Account is banned',
+
+  CATEGORY_NAME_IS_REQUIRED: 'Category name is required',
+  CATEGORY_NAME_MUST_BE_STRING: 'Category name must be a string',
+  CATEGORY_NAME_LENGTH_INVALID: 'Category name length must be from 1 to 200',
+  DESCRIPTION_MUST_BE_STRING: 'Description must be a string',
+  CREATE_CATEGORY_SUCCESS: 'Create category success',
+  CATEGORY_ALREADY_EXISTS: 'Category already exists'
 } as const

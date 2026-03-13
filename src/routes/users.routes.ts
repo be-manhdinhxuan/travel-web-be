@@ -15,7 +15,7 @@ import {
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { filterMiddleware } from '~/middlewares/common.middlewares'
-import { uploadAvatar } from '~/middlewares/uploads.middlewares'
+import { uploadImage } from '~/middlewares/uploads.middlewares'
 import {
   changePasswordValidator,
   tourIdValidator,
@@ -66,7 +66,7 @@ usersRouter.patch(
   '/me/avatar',
   accessTokenValidator,
   verifiedUserValidator,
-  uploadAvatar.single('avatar'),
+  uploadImage.single('avatar'),
   wrapRequestHandler(updateAvatarController)
 )
 
