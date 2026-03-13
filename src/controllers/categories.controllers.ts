@@ -12,6 +12,17 @@ export const getCategoriesController = async (req: Request, res: Response) => {
   })
 }
 
+export const getDetailCategoryController = async (
+  req: Request<ParamsDictionary, any, GetDetailCategoryReqParams>,
+  res: Response
+) => {
+  const { id } = req.params
+  const category = await categoriesService.getDetailCategory(id as string)
+  return res.json({
+    message: MESSAGES.GET_DETAIL_CATEGORY_SUCCESS,
+    result: { category }
+  })
+}
 
 
 export const createCategoryController = async (req: Request<any, any, CreateCategoryReqBody>, res: Response) => {

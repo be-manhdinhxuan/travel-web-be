@@ -29,7 +29,14 @@ class CategoriesService {
     }
   }
 
+  async getDetailCategory(id: string) {
+    const category = await databaseServices.categories.findOne(
+      { _id: new ObjectId(id) },
+      { projection: { created_at: 0, updated_at: 0 } }
+    )
 
+    return category
+  }
 
   async createCategory(payload: CreateCategoryReqBody, file?: Express.Multer.File) {
     let thumbnail = ''

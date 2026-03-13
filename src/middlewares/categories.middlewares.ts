@@ -6,7 +6,35 @@ import { ErrorWithStatus } from '~/models/Errors'
 import databaseServices from '~/services/database.services'
 import { validate } from '~/utils/validation'
 
-
+export const getDetailCategoryValidator = validate(
+  checkSchema(
+    {
+      id: {
+        notEmpty: {
+          errorMessage: MESSAGES.CATEGORY_ID_IS_REQUIRED
+        },
+        isMongoId: {
+          errorMessage: MESSAGES.CATEGORY_ID_INVALID
+        },
+        custom: {
+          options: async (value: string) => {
+            const category = await databaseServices.categories.findOne({
+              _id: new ObjectId(value)
+            })
+            if (!category) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.CATEGORY_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['params']
+  )
+)
 
 export const createCategoryValidator = validate(
   checkSchema({
