@@ -1,5 +1,5 @@
 import { Request } from 'express'
-import { checkSchema } from 'express-validator'
+import { checkSchema, ParamSchema } from 'express-validator'
 import { JsonWebTokenError } from 'jsonwebtoken'
 import { capitalize } from 'lodash'
 import { ObjectId } from 'mongodb'
@@ -9,6 +9,29 @@ import { ErrorWithStatus } from '~/models/Errors'
 import databaseServices from '~/services/database.services'
 import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validation'
+
+export const idCategoryValidator: ParamSchema = {
+  notEmpty: {
+    errorMessage: MESSAGES.CATEGORY_ID_IS_REQUIRED
+  },
+  isMongoId: {
+    errorMessage: MESSAGES.CATEGORY_ID_INVALID
+  },
+  custom: {
+    options: async (value: string) => {
+      const category = await databaseServices.categories.findOne({
+        _id: new ObjectId(value)
+      })
+      if (!category) {
+        throw new ErrorWithStatus({
+          message: MESSAGES.CATEGORY_NOT_FOUND,
+          status: HTTP_STATUS.NOT_FOUND
+        })
+      }
+      return true
+    }
+  }
+}
 
 export const optionalAccessTokenValidator = validate(
   checkSchema(
@@ -43,28 +66,7 @@ export const optionalAccessTokenValidator = validate(
 export const getDetailCategoryValidator = validate(
   checkSchema(
     {
-      id: {
-        notEmpty: {
-          errorMessage: MESSAGES.CATEGORY_ID_IS_REQUIRED
-        },
-        isMongoId: {
-          errorMessage: MESSAGES.CATEGORY_ID_INVALID
-        },
-        custom: {
-          options: async (value: string) => {
-            const category = await databaseServices.categories.findOne({
-              _id: new ObjectId(value)
-            })
-            if (!category) {
-              throw new ErrorWithStatus({
-                message: MESSAGES.CATEGORY_NOT_FOUND,
-                status: HTTP_STATUS.NOT_FOUND
-              })
-            }
-            return true
-          }
-        }
-      }
+      id: idCategoryValidator
     },
     ['params']
   )
@@ -101,28 +103,7 @@ export const createCategoryValidator = validate(
 export const updateCategoryValidator = validate(
   checkSchema(
     {
-      id: {
-        notEmpty: {
-          errorMessage: MESSAGES.CATEGORY_ID_IS_REQUIRED
-        },
-        isMongoId: {
-          errorMessage: MESSAGES.CATEGORY_ID_INVALID
-        },
-        custom: {
-          options: async (value: string) => {
-            const category = await databaseServices.categories.findOne({
-              _id: new ObjectId(value)
-            })
-            if (!category) {
-              throw new ErrorWithStatus({
-                message: MESSAGES.CATEGORY_NOT_FOUND,
-                status: HTTP_STATUS.NOT_FOUND
-              })
-            }
-            return true
-          }
-        }
-      },
+      id: idCategoryValidator,
       name: {
         optional: true,
         isString: {
@@ -149,5 +130,14 @@ export const updateCategoryValidator = validate(
       }
     },
     ['body', 'params']
+  )
+)
+
+export const deleteCategoryValidator = validate(
+  checkSchema(
+    {
+      id: idCategoryValidator
+    },
+    ['params']
   )
 )

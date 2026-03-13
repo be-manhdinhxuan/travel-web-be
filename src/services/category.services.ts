@@ -8,9 +8,9 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
 import Category from '~/models/schemas/Category.schema'
-import cloudinary from '~/utils/cloudinary'
+import cloudinary, { getPublicIdFromUrl } from '~/utils/cloudinary'
 import { generateUniqueSlug } from '~/utils/generateSlug'
-import { UserRole } from '~/constants/enums'
+import { TourStatus, UserRole } from '~/constants/enums'
 
 class CategoriesService {
   async getCategories() {
@@ -87,7 +87,7 @@ class CategoriesService {
   }
 
   async updateCategory(id: string, payload: UpdateCategoryReqBody, file?: Express.Multer.File) {
-    const category: any = await databaseServices.categories.findOne({
+    const category = await databaseServices.categories.findOne({
       _id: new ObjectId(id)
     })
 
@@ -106,20 +106,32 @@ class CategoriesService {
 
     // active status
     if (payload.is_active !== undefined) {
-      updateData.is_active = payload.is_active === true
+      if (payload.is_active === false) {
+        const tourCount = await databaseServices.tours.countDocuments({
+          category_id: new ObjectId(id),
+          status: TourStatus.Active
+        })
+        if (tourCount > 0) {
+          throw new ErrorWithStatus({
+            message: MESSAGES.CATEGORY_HAS_ACTIVE_TOURS,
+            status: HTTP_STATUS.BAD_REQUEST
+          })
+        }
+      }
+      updateData.is_active = payload.is_active
     }
 
     // upload thumbnail mới
     if (file) {
-      const upload: any = await uploadImageToCloudinary(file.buffer, 'categories')
-
+      const upload = await uploadImageToCloudinary(file.buffer, 'categories')
       updateData.thumbnail = upload.secure_url
 
       // xóa ảnh cũ
-      if (category.thumbnail) {
-        const publicId = category.thumbnail.split('/').slice(-2).join('/').split('.')[0]
-
-        await cloudinary.uploader.destroy(publicId)
+      if (category?.thumbnail) {
+        const publicId = getPublicIdFromUrl(category.thumbnail)
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId)
+        }
       }
     }
 
@@ -128,14 +140,23 @@ class CategoriesService {
     const updatedCategory = await databaseServices.categories.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: updateData },
-      {
-        returnDocument: 'after'
-      }
+      { returnDocument: 'after' }
     )
 
     return {
       category: updatedCategory
     }
+  }
+
+  async deleteCategory(id: string) {
+    const tourCount = await databaseServices.tours.countDocuments({ category_id: new ObjectId(id) })
+    if (tourCount > 0) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.CATEGORY_HAS_TOURS,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+    await databaseServices.categories.deleteOne({ _id: new ObjectId(id) })
   }
 }
 

@@ -3,6 +3,7 @@ import { create } from 'lodash'
 import { UserRole } from '~/constants/enums'
 import {
   createCategoryController,
+  deleteCategoryController,
   getCategoriesController,
   getDetailCategoryController,
   updateCategoryController
@@ -11,6 +12,7 @@ import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import {
   createCategoryValidator,
+  deleteCategoryValidator,
   getDetailCategoryValidator,
   optionalAccessTokenValidator,
   updateCategoryValidator
@@ -73,6 +75,21 @@ categoriesRouter.put(
   uploadImage.single('thumbnail'),
   updateCategoryValidator,
   wrapRequestHandler(updateCategoryController)
+)
+
+/**
+ * Description: Delete category
+ * Path: /:id
+ * Method: DELETE
+ * Header: { Authorization: Bearer <access_token>}
+ */
+categoriesRouter.delete(
+  '/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  deleteCategoryValidator,
+  wrapRequestHandler(deleteCategoryController)
 )
 
 export default categoriesRouter

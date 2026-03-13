@@ -96,5 +96,8 @@ export const MESSAGES = {
   GET_DETAIL_CATEGORY_SUCCESS: 'Get detail category success',
   CATEGORY_NOT_FOUND: 'Category not found',
   UPDATE_CATEGORY_SUCCESS: 'Update category success',
-  CATEGORY_STATUS_IS_INVALID: 'Category status is invalid'
+  CATEGORY_STATUS_IS_INVALID: 'Category status is invalid',
+  DELETE_CATEGORY_SUCCESS: 'Delete category success',
+  CATEGORY_HAS_TOURS: 'Category has tours, cannot be deleted',
+  CATEGORY_HAS_ACTIVE_TOURS: 'Category has active tours, cannot be disabled'
 } as const
