@@ -9,7 +9,7 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
 import Category from '~/models/schemas/Category.schema'
 import cloudinary, { getPublicIdFromUrl } from '~/utils/cloudinary'
-import { generateUniqueSlug } from '~/utils/generateSlug'
+import { generateUniqueCategorySlug } from '~/utils/generateCategorySlug'
 import { TourStatus, UserRole } from '~/constants/enums'
 
 class CategoriesService {
@@ -57,7 +57,7 @@ class CategoriesService {
       thumbnail = uploadResult.secure_url
     }
 
-    const slug = await generateUniqueSlug(payload.name)
+    const slug = await generateUniqueCategorySlug(payload.name)
 
     const category = new Category({
       name: payload.name,
@@ -96,7 +96,7 @@ class CategoriesService {
     // update name + slug
     if (payload.name) {
       updateData.name = payload.name
-      updateData.slug = await generateUniqueSlug(payload.name)
+      updateData.slug = await generateUniqueCategorySlug(payload.name)
     }
 
     // description

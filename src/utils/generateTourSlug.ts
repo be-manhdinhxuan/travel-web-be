@@ -1,7 +1,8 @@
 import slugify from 'slugify'
 import databaseServices from '~/services/database.services'
+import { ObjectId } from 'mongodb'
 
-export const generateUniqueSlug = async (name: string) => {
+export const generateUniqueTourSlug = async (name: string, tourId?: string) => {
   const baseSlug = slugify(name, {
     lower: true,
     strict: true,
@@ -12,7 +13,10 @@ export const generateUniqueSlug = async (name: string) => {
   let counter = 1
 
   while (true) {
-    const exist = await databaseServices.categories.findOne({ slug })
+    const exist = await databaseServices.tours.findOne({
+      slug,
+      ...(tourId && { _id: { $ne: new ObjectId(tourId) } })
+    })
 
     if (!exist) break
 

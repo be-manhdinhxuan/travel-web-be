@@ -1,7 +1,7 @@
 import { Document, Filter, ObjectId } from 'mongodb'
-import { CreateTourReqBody, GetToursQuery } from '~/models/requests/Tour.requests'
+import { CreateTourReqBody, GetToursQuery, UpdateTourReqBody } from '~/models/requests/Tour.requests'
 import Tour from '~/models/schemas/Tour.schema'
-import { generateUniqueSlug } from '~/utils/generateSlug'
+import { generateUniqueCategorySlug } from '~/utils/generateCategorySlug'
 import { uploadImageToCloudinary } from '~/utils/uploadImageToCloudinary'
 import databaseServices from './database.services'
 import { ScheduleStatus, TourStatus, UserRole } from '~/constants/enums'
@@ -9,6 +9,9 @@ import Schedule from '~/models/schemas/Schedule.schema'
 import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
+import { generateUniqueTourSlug } from '~/utils/generateTourSlug'
+import { uploadImage } from '~/middlewares/uploads.middlewares'
+import cloudinary, { getPublicIdFromUrl } from '~/utils/cloudinary'
 
 class ToursService {
   async createTour(payload: CreateTourReqBody, files: Express.Multer.File[]) {
@@ -20,7 +23,7 @@ class ToursService {
       uploads.forEach((img: any) => images.push(img.secure_url))
     }
 
-    const slug = await generateUniqueSlug(payload.name)
+    const slug = await generateUniqueTourSlug(payload.name)
 
     const tour = new Tour({
       category_id: new ObjectId(payload.category_id),
@@ -156,6 +159,54 @@ class ToursService {
     }
 
     return tour
+  }
+
+  async updateTour(id: string, payload: UpdateTourReqBody, files: Express.Multer.File[] | undefined) {
+    const { name, ...rest } = payload
+
+    const tour = await databaseServices.tours.findOne({
+      _id: new ObjectId(id)
+    })
+
+    if (!tour) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.TOUR_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const updateData: Partial<Tour> = { ...rest }
+
+    // nếu name thay đổi
+    if (name) {
+      updateData.name = name
+      updateData.slug = await generateUniqueTourSlug(name, id)
+    }
+
+    // upload images mới lên Cloudinary
+    if (files?.length) {
+      const uploadedImages = await Promise.all(files.map((file) => uploadImageToCloudinary(file.buffer, 'tours')))
+      // xóa ảnh cũ trên Cloudinary
+      await Promise.all(
+        tour.images.map((url) => {
+          const publicId = getPublicIdFromUrl(url)
+          return publicId ? cloudinary.uploader.destroy(publicId) : Promise.resolve()
+        })
+      )
+      updateData.images = uploadedImages.map((img) => img.secure_url)
+    }
+
+    updateData.updated_at = new Date()
+
+    const updatedTour = await databaseServices.tours.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    )
+
+    return {
+      tour: updatedTour
+    }
   }
 }
 

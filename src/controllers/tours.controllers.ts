@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { MESSAGES } from '~/constants/messages'
-import { CreateTourReqBody, GetToursQuery } from '~/models/requests/Tour.requests'
+import { CreateTourReqBody, GetToursQuery, UpdateTourReqBody } from '~/models/requests/Tour.requests'
 import toursService from '~/services/tour.services'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { TokenPayload } from '~/models/requests/Auth.requests'
@@ -32,5 +32,18 @@ export const getDetailTourController = async (req: Request, res: Response) => {
   return res.json({
     message: MESSAGES.GET_DETAIL_TOUR_SUCCESS,
     result: { tour }
+  })
+}
+
+export const updateTourController = async (req: Request<ParamsDictionary, any, UpdateTourReqBody>, res: Response) => {
+  const { id } = req.params
+  const files = req.files as Express.Multer.File[] | undefined
+  const body = req.body
+
+  const result = await toursService.updateTour(id as string, body, files)
+
+  return res.json({
+    message: MESSAGES.UPDATE_TOUR_SUCCESS,
+    result
   })
 }

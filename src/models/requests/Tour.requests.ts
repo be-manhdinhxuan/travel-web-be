@@ -34,3 +34,17 @@ export interface GetToursQuery {
   max_price?: number
   sort?: 'price_asc' | 'price_desc' | 'newest'
 }
+
+export interface UpdateTourReqBody {
+  id: string
+  name?: string
+  description?: string
+  highlights?: string[]
+  destination: string
+  departure_city: string
+  duration_days: number
+  duration_nights: number
+  itinerary?: ItineraryDayType[]
+  includes?: string[]
+  excludes?: string[]
+}

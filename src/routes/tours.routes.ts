@@ -1,10 +1,21 @@
 import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
-import { createTourController, getDetailTourController, getToursController } from '~/controllers/tours.controllers'
+import {
+  createTourController,
+  getDetailTourController,
+  getToursController,
+  updateTourController
+} from '~/controllers/tours.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { optionalAccessTokenValidator } from '~/middlewares/categories.middlewares'
-import { createTourValidator, getDetailTourValidator, getToursValidator } from '~/middlewares/tours.middlewares'
+import {
+  createTourValidator,
+  getDetailTourValidator,
+  getToursValidator,
+  idTourValidator,
+  updateTourValidator
+} from '~/middlewares/tours.middlewares'
 import { uploadImage } from '~/middlewares/uploads.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
@@ -58,6 +69,35 @@ toursRouter.get(
   optionalAccessTokenValidator,
   getDetailTourValidator,
   wrapRequestHandler(getDetailTourController)
+)
+
+/**
+ * Description: Update a tour
+ * Path: /:id
+ * Method: PUT
+ * Header: { Authorization: Bearer <access_token>}
+ * Param: id - tour id
+ * Body: Đều là optional {name (string, required)
+category_id (ObjectId, required)
+description (string)
+highlights (JSON string array) — VD: ["Điểm 1","Điểm 2"]
+destination (string, required)
+departure_city (string, required)
+duration_days (int, required, min 1)
+duration_nights (int, required, min 0)
+itinerary (JSON string array) — VD: [{"day":1,"title":"...","description":"..."}]
+includes (JSON string array) — VD: ["Bao gồm 1","Bao gồm 2"]
+excludes (JSON string array) — VD: ["Không bao gồm 1"]
+images (file, multipart/form-data) — tối đa 10 ảnh}
+ */
+toursRouter.put(
+  '/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  uploadImage.array('images', 10),
+  updateTourValidator,
+  wrapRequestHandler(updateTourController)
 )
 
 export default toursRouter
