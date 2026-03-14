@@ -193,3 +193,98 @@ export const createTourValidator = validate(
     ['body']
   )
 )
+
+export const getToursValidator = validate(
+  checkSchema(
+    {
+      page: {
+        optional: true,
+        isInt: {
+          options: { min: 1 },
+          errorMessage: MESSAGES.PAGE_MUST_BE_A_POSITIVE_INTEGER
+        },
+        toInt: true
+      },
+      limit: {
+        optional: true,
+        isInt: {
+          options: { min: 1, max: 100 },
+          errorMessage: MESSAGES.LIMIT_MUST_BE_FROM_1_TO_100
+        },
+        toInt: true
+      },
+      keyword: {
+        optional: true,
+        isString: {
+          errorMessage: MESSAGES.KEYWORD_MUST_BE_A_STRING
+        },
+        trim: true
+      },
+      category_id: {
+        optional: true,
+        custom: {
+          options: (value: string) => {
+            if (!ObjectId.isValid(value)) {
+              throw new Error(MESSAGES.CATEGORY_ID_IS_INVALID)
+            }
+            return true
+          }
+        }
+      },
+      destination: {
+        optional: true,
+        isString: {
+          errorMessage: MESSAGES.TOUR_DESTINATION_MUST_BE_A_STRING
+        },
+        trim: true
+      },
+      departure_date: {
+        optional: true,
+        isDate: {
+          options: { format: 'YYYY-MM-DD' },
+          errorMessage: MESSAGES.DEPARTURE_DATE_IS_INVALID
+        }
+      },
+      num_adults: {
+        optional: true,
+        isInt: {
+          options: { min: 1 },
+          errorMessage: MESSAGES.NUM_ADULTS_MUST_BE_A_POSITIVE_INTEGER
+        },
+        toInt: true
+      },
+      num_children: {
+        optional: true,
+        isInt: {
+          options: { min: 0 },
+          errorMessage: MESSAGES.NUM_CHILDREN_MUST_BE_NON_NEGATIVE
+        },
+        toInt: true
+      },
+      min_price: {
+        optional: true,
+        isInt: {
+          options: { min: 0 },
+          errorMessage: MESSAGES.MIN_PRICE_MUST_BE_NON_NEGATIVE
+        },
+        toInt: true
+      },
+      max_price: {
+        optional: true,
+        isInt: {
+          options: { min: 0 },
+          errorMessage: MESSAGES.MAX_PRICE_MUST_BE_NON_NEGATIVE
+        },
+        toInt: true
+      },
+      sort: {
+        optional: true,
+        isIn: {
+          options: [['price_asc', 'price_desc', 'newest']],
+          errorMessage: MESSAGES.SORT_IS_INVALID
+        }
+      }
+    },
+    ['query']
+  )
+)

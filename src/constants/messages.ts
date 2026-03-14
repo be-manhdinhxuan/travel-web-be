@@ -129,5 +129,15 @@ export const MESSAGES = {
   TOUR_INCLUDES_MUST_BE_ARRAY_OF_STRING: 'Tour includes must be an array of string',
   TOUR_EXCLUDES_MUST_BE_AN_ARRAY: 'Tour excludes must be an array',
   TOUR_EXCLUDES_MUST_BE_ARRAY_OF_STRING: 'Tour excludes must be an array of string',
-  CREATE_TOUR_SUCCESS: 'Create tour success'
+  CREATE_TOUR_SUCCESS: 'Create tour success',
+  PAGE_MUST_BE_A_POSITIVE_INTEGER: 'Page must be a positive integer',
+  LIMIT_MUST_BE_FROM_1_TO_100: 'Limit must be from 1 to 100',
+  KEYWORD_MUST_BE_A_STRING: 'Keyword must be a string',
+  DEPARTURE_DATE_IS_INVALID: 'Departure date is invalid',
+  NUM_ADULTS_MUST_BE_A_POSITIVE_INTEGER: 'Number of adults must be a positive integer',
+  NUM_CHILDREN_MUST_BE_NON_NEGATIVE: 'Number of children must be a non-negative integer',
+  MIN_PRICE_MUST_BE_NON_NEGATIVE: 'Min price must be a non-negative integer',
+  MAX_PRICE_MUST_BE_NON_NEGATIVE: 'Max price must be a non-negative integer',
+  SORT_IS_INVALID: 'Sort is invalid',
+  GET_TOURS_SUCCESS: 'Get tours success'
 } as const

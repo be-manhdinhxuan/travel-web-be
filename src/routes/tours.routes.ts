@@ -1,9 +1,9 @@
 import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
-import { createTourController } from '~/controllers/tours.controllers'
+import { createTourController, getToursController } from '~/controllers/tours.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
-import { createTourValidator } from '~/middlewares/tours.middlewares'
+import { createTourValidator, getToursValidator } from '~/middlewares/tours.middlewares'
 import { uploadImage } from '~/middlewares/uploads.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
@@ -12,10 +12,21 @@ const toursRouter = Router()
 
 /**
  * Description: Create a new tour
- * Path:
+ * Path: /
  * Method: POST
  * Header: { Authorization: Bearer <access_token>}
- * Body: {}
+ * Body: {name (string, required)
+category_id (ObjectId, required)
+description (string)
+highlights (JSON string array) — VD: ["Điểm 1","Điểm 2"]
+destination (string, required)
+departure_city (string, required)
+duration_days (int, required, min 1)
+duration_nights (int, required, min 0)
+itinerary (JSON string array) — VD: [{"day":1,"title":"...","description":"..."}]
+includes (JSON string array) — VD: ["Bao gồm 1","Bao gồm 2"]
+excludes (JSON string array) — VD: ["Không bao gồm 1"]
+images (file, multipart/form-data) — tối đa 10 ảnh}
  */
 toursRouter.post(
   '',
@@ -26,5 +37,13 @@ toursRouter.post(
   createTourValidator,
   wrapRequestHandler(createTourController)
 )
+
+/**
+ * Description: Get list of tours
+ * Path: /
+ * Method: GET
+ * Query: { page, limit, keyword, category_id, destination, departure_date, num_adults, num_children, min_price, max_price, sort }
+ */
+toursRouter.get('', getToursValidator, wrapRequestHandler(getToursController))
 
 export default toursRouter
