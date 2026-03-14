@@ -25,7 +25,7 @@ export const getDetailCategoryController = async (
   res: Response
 ) => {
   const { id } = req.params
-  const { role } = req.decoded_authorization as TokenPayload
+  const { role } = (req.decoded_authorization as TokenPayload) || {}
   const category = await categoriesService.getDetailCategory(id as string, role)
   return res.json({
     message: MESSAGES.GET_DETAIL_CATEGORY_SUCCESS,
@@ -65,7 +65,7 @@ export const updateCategoryController = async (
 }
 
 export const deleteCategoryController = async (req: Request<{ id: string }>, res: Response) => {
-  const {id} = req.params
+  const { id } = req.params
   await categoriesService.deleteCategory(id)
 
   return res.json({

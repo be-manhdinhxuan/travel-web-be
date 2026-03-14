@@ -1,9 +1,12 @@
 import { checkSchema } from 'express-validator'
-import { ObjectId } from 'mongodb'
+import { Filter, ObjectId } from 'mongodb'
+import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
+import { ErrorWithStatus } from '~/models/Errors'
 import { ItineraryDayType } from '~/models/schemas/Tour.schema'
 import databaseServices from '~/services/database.services'
 import { validate } from '~/utils/validation'
+import { Request } from 'express'
 
 export const createTourValidator = validate(
   checkSchema(
@@ -286,5 +289,29 @@ export const getToursValidator = validate(
       }
     },
     ['query']
+  )
+)
+
+export const getDetailTourValidator = validate(
+  checkSchema(
+    {
+      slug: {
+        trim: true,
+        custom: {
+          options: async (value: string, { req }) => {
+            const tour = await databaseServices.tours.findOne({ slug: value })
+
+            if (!tour) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.TOUR_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['params']
   )
 )

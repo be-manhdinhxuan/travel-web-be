@@ -139,5 +139,6 @@ export const MESSAGES = {
   MIN_PRICE_MUST_BE_NON_NEGATIVE: 'Min price must be a non-negative integer',
   MAX_PRICE_MUST_BE_NON_NEGATIVE: 'Max price must be a non-negative integer',
   SORT_IS_INVALID: 'Sort is invalid',
-  GET_TOURS_SUCCESS: 'Get tours success'
+  GET_TOURS_SUCCESS: 'Get tours success',
+  GET_DETAIL_TOUR_SUCCESS: 'Get detail tour success'
 } as const

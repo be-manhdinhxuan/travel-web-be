@@ -1,9 +1,10 @@
 import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
-import { createTourController, getToursController } from '~/controllers/tours.controllers'
+import { createTourController, getDetailTourController, getToursController } from '~/controllers/tours.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
-import { createTourValidator, getToursValidator } from '~/middlewares/tours.middlewares'
+import { optionalAccessTokenValidator } from '~/middlewares/categories.middlewares'
+import { createTourValidator, getDetailTourValidator, getToursValidator } from '~/middlewares/tours.middlewares'
 import { uploadImage } from '~/middlewares/uploads.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
@@ -45,5 +46,18 @@ toursRouter.post(
  * Query: { page, limit, keyword, category_id, destination, departure_date, num_adults, num_children, min_price, max_price, sort }
  */
 toursRouter.get('', getToursValidator, wrapRequestHandler(getToursController))
+
+/**
+ * Description: Get detail tour
+ * Path: /:slug
+ * Method: GET
+ * Param: slug - tour slug
+ */
+toursRouter.get(
+  '/:slug',
+  optionalAccessTokenValidator,
+  getDetailTourValidator,
+  wrapRequestHandler(getDetailTourController)
+)
 
 export default toursRouter

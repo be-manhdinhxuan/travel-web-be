@@ -4,8 +4,11 @@ import Tour from '~/models/schemas/Tour.schema'
 import { generateUniqueSlug } from '~/utils/generateSlug'
 import { uploadImageToCloudinary } from '~/utils/uploadImageToCloudinary'
 import databaseServices from './database.services'
-import { ScheduleStatus, TourStatus } from '~/constants/enums'
+import { ScheduleStatus, TourStatus, UserRole } from '~/constants/enums'
 import Schedule from '~/models/schemas/Schedule.schema'
+import { ErrorWithStatus } from '~/models/Errors'
+import { MESSAGES } from '~/constants/messages'
+import HTTP_STATUS from '~/constants/httpStatus'
 
 class ToursService {
   async createTour(payload: CreateTourReqBody, files: Express.Multer.File[]) {
@@ -134,6 +137,25 @@ class ToursService {
         total_pages: Math.ceil(total / limit)
       }
     }
+  }
+
+  async getDetailTour(slug: string, role: UserRole) {
+    const filter: Filter<Tour> = { slug }
+
+    if (role !== UserRole.Admin) {
+      filter.status = TourStatus.Active
+    }
+
+    const tour = await databaseServices.tours.findOne(filter)
+
+    if (!tour) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.TOUR_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    return tour
   }
 }
 

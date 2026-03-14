@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb'
+import { ParamsDictionary } from 'express-serve-static-core'
 
 interface ItineraryDayType {
   day: number
