@@ -145,5 +145,7 @@ export const MESSAGES = {
   TOUR_STATUS_IS_INVALID: 'Tour status is invalid',
   UPDATE_TOUR_SUCCESS: 'Update tour success',
   TOUR_STATUS_IS_REQUIRED: 'Tour status is required',
-  UPDATE_TOUR_STATUS_SUCCESS: 'Update tour status success'
+  UPDATE_TOUR_STATUS_SUCCESS: 'Update tour status success',
+  DELETE_TOUR_SUCCESS: 'Delete tour success',
+  TOUR_HAS_BOOKINGS: 'Tour has bookings, cannot be deleted'
 } as const

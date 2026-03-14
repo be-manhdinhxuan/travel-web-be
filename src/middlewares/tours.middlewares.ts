@@ -523,3 +523,12 @@ export const updateTourStatusValidator = validate(
     ['body', 'params']
   )
 )
+
+export const deleteTourValidator = validate(
+  checkSchema(
+    {
+      id: idTourValidator
+    },
+    ['params']
+  )
+)

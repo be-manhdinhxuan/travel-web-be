@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
 import {
   createTourController,
+  deleteTourController,
   getDetailTourController,
   getToursController,
   updateTourController,
@@ -12,6 +13,7 @@ import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { optionalAccessTokenValidator } from '~/middlewares/categories.middlewares'
 import {
   createTourValidator,
+  deleteTourValidator,
   getDetailTourValidator,
   getToursValidator,
   idTourValidator,
@@ -117,6 +119,22 @@ toursRouter.patch(
   authorize(UserRole.Admin),
   updateTourStatusValidator,
   wrapRequestHandler(updateTourStatusController)
+)
+
+/**
+ * Description: Delete a tour
+ * Path: /:id
+ * Method: DELETE
+ * Header: { Authorization: Bearer <access_token>}
+ * Param: id - tour id
+ */
+toursRouter.delete(
+  '/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  deleteTourValidator,
+  wrapRequestHandler(deleteTourController)
 )
 
 export default toursRouter

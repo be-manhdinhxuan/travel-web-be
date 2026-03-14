@@ -61,3 +61,12 @@ export const updateTourStatusController = async (
     result
   })
 }
+
+export const deleteTourController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  await toursService.deleteTour(id as string)
+
+  return res.json({
+    message: MESSAGES.DELETE_TOUR_SUCCESS
+  })
+}

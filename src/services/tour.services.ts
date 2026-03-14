@@ -221,6 +221,21 @@ class ToursService {
     )
     return updateTour
   }
+
+  async deleteTour(id: string) {
+    const bookingCount = await databaseServices.bookings.countDocuments({
+      tour_id: new ObjectId(id)
+    })
+
+    if (bookingCount > 0) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.TOUR_HAS_BOOKINGS,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    await databaseServices.tours.deleteOne({ _id: new ObjectId(id) })
+  }
 }
 
 const toursService = new ToursService()
