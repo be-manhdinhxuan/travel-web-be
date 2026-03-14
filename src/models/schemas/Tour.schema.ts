@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb'
 import { TourStatus } from '~/constants/enums'
 
-interface ItineraryDayType {
+export interface ItineraryDayType {
   day: number
   title: string
   description: string

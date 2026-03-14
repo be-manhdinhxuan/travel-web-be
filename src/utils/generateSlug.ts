@@ -4,7 +4,8 @@ import databaseServices from '~/services/database.services'
 export const generateUniqueSlug = async (name: string) => {
   const baseSlug = slugify(name, {
     lower: true,
-    strict: true
+    strict: true,
+    locale: 'vi'
   })
 
   let slug = baseSlug

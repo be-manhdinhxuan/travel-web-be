@@ -6,6 +6,7 @@ import { defaultErrorHandler } from './middlewares/error.middlerwares'
 import cors from 'cors'
 import usersRouter from './routes/users.routes'
 import categoriesRouter from './routes/categories.routes'
+import toursRouter from './routes/tours.routes'
 
 config()
 databaseService.connect()
@@ -22,6 +23,9 @@ app.use('/api/users', usersRouter)
 
 // Category
 app.use('/api/categories', categoriesRouter)
+
+// Tour
+app.use('/api/tours', toursRouter)
 
 app.use(defaultErrorHandler)
 
