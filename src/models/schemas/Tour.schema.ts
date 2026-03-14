@@ -7,12 +7,6 @@ export interface ItineraryDayType {
   description: string
 }
 
-interface FlashSaleType {
-  price: number
-  start_at: Date
-  end_at: Date
-}
-
 interface TourType {
   _id?: ObjectId
   category_id: ObjectId
@@ -28,7 +22,6 @@ interface TourType {
   itinerary?: ItineraryDayType[]
   includes?: string[]
   excludes?: string[]
-  flash_sale?: FlashSaleType | null
   status?: TourStatus
   created_at?: Date
   updated_at?: Date
@@ -49,7 +42,6 @@ export default class Tour {
   itinerary: ItineraryDayType[]
   includes: string[]
   excludes: string[]
-  flash_sale: FlashSaleType | null
   status: TourStatus
   created_at: Date
   updated_at: Date
@@ -69,7 +61,6 @@ export default class Tour {
     this.itinerary = tour.itinerary || []
     this.includes = tour.includes || []
     this.excludes = tour.excludes || []
-    this.flash_sale = tour.flash_sale ?? null
     this.status = tour.status ?? TourStatus.Inactive
     this.created_at = tour.created_at || date
     this.updated_at = tour.updated_at || date
