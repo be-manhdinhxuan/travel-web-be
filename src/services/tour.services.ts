@@ -208,6 +208,19 @@ class ToursService {
       tour: updatedTour
     }
   }
+
+  async updateTourStatus(id: string, status: number) {
+    const updateTour = await databaseServices.tours.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      {
+        $set: { status },
+        $currentDate: { updated_at: true }
+      },
+
+      { returnDocument: 'after' }
+    )
+    return updateTour
+  }
 }
 
 const toursService = new ToursService()

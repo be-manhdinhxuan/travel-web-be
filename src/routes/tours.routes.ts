@@ -4,7 +4,8 @@ import {
   createTourController,
   getDetailTourController,
   getToursController,
-  updateTourController
+  updateTourController,
+  updateTourStatusController
 } from '~/controllers/tours.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
@@ -14,6 +15,7 @@ import {
   getDetailTourValidator,
   getToursValidator,
   idTourValidator,
+  updateTourStatusValidator,
   updateTourValidator
 } from '~/middlewares/tours.middlewares'
 import { uploadImage } from '~/middlewares/uploads.middlewares'
@@ -98,6 +100,23 @@ toursRouter.put(
   uploadImage.array('images', 10),
   updateTourValidator,
   wrapRequestHandler(updateTourController)
+)
+
+/**
+ * Description: Update tour status (active/inactive/cancelled)
+ * Path: /:id/status
+ * Method: PATCH
+ * Header: { Authorization: Bearer <access_token>}
+ * Param: id - tour id
+ * Body: {status: 'active' | 'inactive' | 'cancelled'}
+ */
+toursRouter.patch(
+  '/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  updateTourStatusValidator,
+  wrapRequestHandler(updateTourStatusController)
 )
 
 export default toursRouter

@@ -504,3 +504,22 @@ export const updateTourValidator = validate(
     ['body', 'params']
   )
 )
+
+export const updateTourStatusValidator = validate(
+  checkSchema(
+    {
+      id: idTourValidator,
+      status: {
+        notEmpty: {
+          errorMessage: MESSAGES.TOUR_STATUS_IS_REQUIRED
+        },
+        isIn: {
+          options: [[TourStatus.Inactive, TourStatus.Active, TourStatus.Cancelled]],
+          errorMessage: MESSAGES.TOUR_STATUS_IS_INVALID
+        },
+        toInt: true
+      }
+    },
+    ['body', 'params']
+  )
+)

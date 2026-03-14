@@ -47,3 +47,17 @@ export const updateTourController = async (req: Request<ParamsDictionary, any, U
     result
   })
 }
+
+export const updateTourStatusController = async (
+  req: Request<ParamsDictionary, any, { status: number }>,
+  res: Response
+) => {
+  const { id } = req.params
+  const { status } = req.body
+  const result = await toursService.updateTourStatus(id as string, status)
+
+  return res.json({
+    message: MESSAGES.UPDATE_TOUR_STATUS_SUCCESS,
+    result
+  })
+}
