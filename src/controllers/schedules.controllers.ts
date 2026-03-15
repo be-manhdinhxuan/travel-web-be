@@ -3,7 +3,7 @@ import { ParamsDictionary } from 'express-serve-static-core'
 import { MESSAGES } from '~/constants/messages'
 import { TokenPayload } from '~/models/requests/Auth.requests'
 import { CreateScheduleReqBody, GetSchedulesQuery, UpdateScheduleReqBody } from '~/models/requests/Schedule.requests'
-import schedulesService from '~/services/schedule.services'
+import schedulesService from '~/services/schedules.services'
 
 export const createScheduleController = async (
   req: Request<ParamsDictionary, any, CreateScheduleReqBody>,

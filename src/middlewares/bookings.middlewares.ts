@@ -1,0 +1,112 @@
+import { checkSchema } from "express-validator"
+import { ObjectId } from "mongodb"
+import { PaymentProvider, ScheduleStatus } from "~/constants/enums"
+import HTTP_STATUS from "~/constants/httpStatus"
+import { MESSAGES } from "~/constants/messages"
+import { ErrorWithStatus } from "~/models/Errors"
+import databaseServices from "~/services/database.services"
+import { validate } from "~/utils/validation"
+
+
+export const createBookingValidator = validate(
+  checkSchema(
+    {
+      schedule_id: {
+        notEmpty: {
+          errorMessage: MESSAGES.SCHEDULE_ID_IS_REQUIRED
+        },
+        custom: {
+          options: async (value: string) => {
+            if (!ObjectId.isValid(value)) {
+              throw new Error(MESSAGES.SCHEDULE_ID_IS_INVALID)
+            }
+            const schedule = await databaseServices.schedules.findOne({
+              _id: new ObjectId(value),
+              status: { $in: [ScheduleStatus.Available, ScheduleStatus.Full] },
+              departure_date: { $gte: new Date() }
+            })
+            if (!schedule) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.SCHEDULE_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            return true
+          }
+        }
+      },
+      'passengers.adults': {
+        notEmpty: {
+          errorMessage: MESSAGES.PASSENGERS_ADULTS_IS_REQUIRED
+        },
+        isInt: {
+          options: { min: 1 },
+          errorMessage: MESSAGES.PASSENGERS_ADULTS_MUST_BE_AT_LEAST_1
+        },
+        toInt: true
+      },
+      'passengers.children': {
+        optional: true,
+        isInt: {
+          options: { min: 0 },
+          errorMessage: MESSAGES.PASSENGERS_CHILDREN_MUST_BE_NON_NEGATIVE
+        },
+        toInt: true
+      },
+      'passengers.babies': {
+        optional: true,
+        isInt: {
+          options: { min: 0 },
+          errorMessage: MESSAGES.PASSENGERS_BABIES_MUST_BE_NON_NEGATIVE
+        },
+        toInt: true
+      },
+      coupon_code: {
+        optional: true,
+        isString: {
+          errorMessage: MESSAGES.COUPON_CODE_MUST_BE_A_STRING
+        },
+        trim: true,
+        toUpperCase: true
+      },
+      payment_method: {
+        notEmpty: {
+          errorMessage: MESSAGES.PAYMENT_METHOD_IS_REQUIRED
+        },
+        isIn: {
+          options: [[PaymentProvider.Momo, PaymentProvider.VNPay]],
+          errorMessage: MESSAGES.PAYMENT_METHOD_IS_INVALID
+        },
+        toInt: true
+      },
+      'contact_info.full_name': {
+        notEmpty: {
+          errorMessage: MESSAGES.CONTACT_FULL_NAME_IS_REQUIRED
+        },
+        isString: {
+          errorMessage: MESSAGES.CONTACT_FULL_NAME_MUST_BE_A_STRING
+        },
+        trim: true
+      },
+      'contact_info.phone': {
+        notEmpty: {
+          errorMessage: MESSAGES.CONTACT_PHONE_IS_REQUIRED
+        },
+        isMobilePhone: {
+          options: ['vi-VN'],
+          errorMessage: MESSAGES.CONTACT_PHONE_IS_INVALID
+        }
+      },
+      'contact_info.email': {
+        notEmpty: {
+          errorMessage: MESSAGES.CONTACT_EMAIL_IS_REQUIRED
+        },
+        isEmail: {
+          errorMessage: MESSAGES.CONTACT_EMAIL_IS_INVALID
+        },
+        trim: true
+      }
+    },
+    ['body']
+  )
+)

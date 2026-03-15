@@ -8,6 +8,7 @@ import usersRouter from './routes/users.routes'
 import categoriesRouter from './routes/categories.routes'
 import toursRouter from './routes/tours.routes'
 import schedulesRouter from './routes/schedules.routes'
+import bookingsRouter from './routes/bookings.routes'
 
 config()
 databaseService.connect()
@@ -30,6 +31,9 @@ app.use('/api/tours', toursRouter)
 
 // Schedule
 app.use('/api/schedules', schedulesRouter)
+
+// Booking
+app.use('/api/bookings', bookingsRouter)
 
 app.use(defaultErrorHandler)
 

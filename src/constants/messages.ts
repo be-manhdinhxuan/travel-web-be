@@ -170,5 +170,27 @@ export const MESSAGES = {
   SCHEDULE_STATUS_IS_INVALID: 'Schedule status is invalid',
   TOTAL_SLOTS_CANNOT_BE_LESS_THAN_BOOKED: 'Total slots cannot be less than booked slots',
   DELETE_SCHEDULE_SUCCESS: 'Delete schedule success',
-  SCHEDULE_HAS_BOOKINGS: 'Schedule has bookings, cannot be deleted'
+  SCHEDULE_HAS_BOOKINGS: 'Schedule has bookings, cannot be deleted',
+
+  SCHEDULE_ID_IS_REQUIRED: 'Schedule id is required',
+  SCHEDULE_ID_IS_INVALID: 'Schedule id is invalid',
+  PASSENGERS_ADULTS_IS_REQUIRED: 'Number of adult passengers is required',
+  PASSENGERS_ADULTS_MUST_BE_AT_LEAST_1: 'Number of adult passengers must be at least 1',
+  PASSENGERS_CHILDREN_MUST_BE_NON_NEGATIVE: 'Number of child passengers must be a non-negative integer',
+  PASSENGERS_BABIES_MUST_BE_NON_NEGATIVE: 'Number of baby passengers must be a non-negative integer',
+  COUPON_CODE_MUST_BE_A_STRING: 'Coupon code must be a string',
+  PAYMENT_METHOD_IS_REQUIRED: 'Payment method is required',
+  PAYMENT_METHOD_IS_INVALID: 'Payment method is invalid',
+  BOOKING_SUCCESS: 'Booking success',
+  CONTACT_FULL_NAME_IS_REQUIRED: 'Contact full name is required',
+  CONTACT_FULL_NAME_MUST_BE_A_STRING: 'Contact full name must be a string',
+  CONTACT_PHONE_IS_REQUIRED: 'Contact phone is required',
+  CONTACT_PHONE_IS_INVALID: 'Contact phone is invalid',
+  CONTACT_EMAIL_IS_REQUIRED: 'Contact email is required',
+  CONTACT_EMAIL_IS_INVALID: 'Contact email is invalid',
+  CREATE_BOOKING_SUCCESS: 'Create booking success',
+  SCHEDULE_NOT_ENOUGH_SLOTS: 'Schedule does not have enough available slots',
+  COUPON_INVALID: 'Coupon code is invalid',
+  COUPON_MIN_ORDER_NOT_MET: 'Coupon minimum order value not met',
+  COUPON_ALREADY_USED: 'Coupon code has already been used by this user'
 } as const

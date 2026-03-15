@@ -1,0 +1,17 @@
+import { PaymentProvider } from '~/constants/enums'
+
+export interface CreateBookingReqBody {
+  schedule_id: string
+  passengers: {
+    adults: number
+    children?: number
+    babies?: number
+  }
+  coupon_code?: string
+  payment_method: PaymentProvider
+  contact_info: {
+    full_name: string
+    phone: string
+    email: string
+  }
+}

@@ -10,7 +10,7 @@ import {
   UpdateCategoryReqBody,
   UpdateCategoryReqParams
 } from '~/models/requests/Category.request'
-import categoriesService from '~/services/category.services'
+import categoriesService from '~/services/categories.services'
 
 export const getCategoriesController = async (req: Request, res: Response) => {
   const result = await categoriesService.getCategories()

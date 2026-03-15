@@ -16,7 +16,7 @@ import {
   VerifyForgotPasswordReqBody
 } from '~/models/requests/Auth.requests'
 import User from '~/models/schemas/User.schema'
-import authsService from '~/services/auth.services'
+import authsService from '~/services/auths.services'
 import databaseServices from '~/services/database.services'
 
 export const registerController = async (

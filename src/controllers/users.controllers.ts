@@ -14,7 +14,7 @@ import {
   UpdateUserRoleReqBody,
   UpdateUserRoleReqParams
 } from '~/models/requests/User.requests'
-import usersService from '~/services/user.services'
+import usersService from '~/services/users.services'
 
 export const getMeController = async (req: Request, res: Response, next: NextFunction) => {
   const { user_id } = req.decoded_authorization as TokenPayload

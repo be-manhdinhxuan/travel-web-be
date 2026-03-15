@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { MESSAGES } from '~/constants/messages'
 import { CreateTourReqBody, GetToursQuery, UpdateTourReqBody } from '~/models/requests/Tour.requests'
-import toursService from '~/services/tour.services'
+import toursService from '~/services/tours.services'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { TokenPayload } from '~/models/requests/Auth.requests'
 

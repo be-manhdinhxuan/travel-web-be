@@ -32,7 +32,7 @@ interface PriceDetailType {
   child_total: number
   baby_total: number
   discount_amount: number
-  coupon_code: string // '' nếu không dùng coupon
+  coupon_code: string
 }
 
 interface BookingType {
