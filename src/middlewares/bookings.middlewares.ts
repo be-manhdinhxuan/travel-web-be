@@ -252,12 +252,7 @@ export const getBookingsValidator = validate(
       status: {
         optional: true,
         isIn: {
-          options: [[
-            BookingStatus.Pending,
-            BookingStatus.Confirmed,
-            BookingStatus.Completed,
-            BookingStatus.Cancelled
-          ]],
+          options: [[BookingStatus.Pending, BookingStatus.Confirmed, BookingStatus.Completed, BookingStatus.Cancelled]],
           errorMessage: MESSAGES.BOOKING_STATUS_IS_INVALID
         },
         toInt: true
@@ -304,5 +299,35 @@ export const getBookingsValidator = validate(
       }
     },
     ['query']
+  )
+)
+
+export const getBookingDetailValidator = validate(
+  checkSchema(
+    {
+      id: {
+        custom: {
+          options: async (value: string) => {
+            if (!ObjectId.isValid(value)) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_ID_IS_INVALID,
+                status: HTTP_STATUS.BAD_REQUEST
+              })
+            }
+            const booking = await databaseServices.bookings.findOne({
+              _id: new ObjectId(value)
+            })
+            if (!booking) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['params']
   )
 )

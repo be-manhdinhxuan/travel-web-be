@@ -3,6 +3,7 @@ import { UserRole } from '~/constants/enums'
 import {
   cancelBookingController,
   createBookingController,
+  getBookingDetailController,
   getBookingsController,
   getMyBookingDetailController,
   getMyBookingsController
@@ -12,6 +13,7 @@ import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import {
   cancelBookingValidator,
   createBookingValidator,
+  getBookingDetailValidator,
   getBookingsValidator,
   getMyBookingDetailValidator,
   getMyBookingsValidator
@@ -106,6 +108,22 @@ bookingsRouter.get(
   authorize(UserRole.Admin),
   getBookingsValidator,
   wrapRequestHandler(getBookingsController)
+)
+
+/**
+ * Description: Get booking detail (Admin)
+ * Path: /:id
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ * Param: id - booking id
+ */
+bookingsRouter.get(
+  '/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  getBookingDetailValidator,
+  wrapRequestHandler(getBookingDetailController)
 )
 
 export default bookingsRouter
