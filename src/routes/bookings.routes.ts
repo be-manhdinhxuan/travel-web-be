@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { createBookingController } from '~/controllers/bookings.controllers'
+import { createBookingController, getMyBookingsController } from '~/controllers/bookings.controllers'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
-import { createBookingValidator } from '~/middlewares/bookings.middlewares'
+import { createBookingValidator, getMyBookingsValidator } from '~/middlewares/bookings.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
 
@@ -30,6 +30,21 @@ bookingsRouter.post(
   verifiedUserValidator,
   createBookingValidator,
   wrapRequestHandler(createBookingController)
+)
+
+/**
+ * Description: Get my booking history
+ * Path: /my
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ * Query: { page, limit, status }
+ */
+bookingsRouter.get(
+  '/my',
+  accessTokenValidator,
+  verifiedUserValidator,
+  getMyBookingsValidator,
+  wrapRequestHandler(getMyBookingsController)
 )
 
 export default bookingsRouter

@@ -2,8 +2,8 @@ import { ErrorWithStatus } from '~/models/Errors'
 import databaseServices from './database.services'
 import { MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
-import { ObjectId } from 'mongodb'
-import { CreateBookingReqBody } from '~/models/requests/Booking.requests'
+import { Filter, ObjectId } from 'mongodb'
+import { CreateBookingReqBody, GetMyBookingsQuery } from '~/models/requests/Booking.requests'
 import Booking from '~/models/schemas/Booking.schema'
 import { generateBookingCode } from '~/utils/generateBookingCode'
 
@@ -139,6 +139,35 @@ class BookingServices {
     booking._id = result.insertedId
 
     return { booking }
+  }
+
+  async getMyBookings(user_id: string, query: GetMyBookingsQuery) {
+    const page = Number(query.page) || 1
+    const limit = Number(query.limit) || 10
+    const skip = (page - 1) * limit
+
+    const filter: Filter<Booking> = {
+      user_id: new ObjectId(user_id)
+    }
+
+    if (query.status !== undefined) {
+      filter.status = Number(query.status)
+    }
+
+    const [bookings, total] = await Promise.all([
+      databaseServices.bookings.find(filter).sort({ created_at: -1 }).skip(skip).limit(limit).toArray(),
+      databaseServices.bookings.countDocuments(filter)
+    ])
+
+    return {
+      bookings,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages: Math.ceil(total / limit)
+      }
+    }
   }
 }
 

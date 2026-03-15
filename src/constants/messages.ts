@@ -192,5 +192,7 @@ export const MESSAGES = {
   SCHEDULE_NOT_ENOUGH_SLOTS: 'Schedule does not have enough available slots',
   COUPON_INVALID: 'Coupon code is invalid',
   COUPON_MIN_ORDER_NOT_MET: 'Coupon minimum order value not met',
-  COUPON_ALREADY_USED: 'Coupon code has already been used by this user'
+  COUPON_ALREADY_USED: 'Coupon code has already been used by this user',
+  BOOKING_STATUS_IS_INVALID: 'Booking status is invalid',
+  GET_MY_BOOKINGS_SUCCESS: 'Get my bookings success'
 } as const

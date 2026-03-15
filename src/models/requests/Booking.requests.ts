@@ -1,4 +1,4 @@
-import { PaymentProvider } from '~/constants/enums'
+import { BookingStatus, PaymentProvider } from '~/constants/enums'
 
 export interface CreateBookingReqBody {
   schedule_id: string
@@ -14,4 +14,10 @@ export interface CreateBookingReqBody {
     phone: string
     email: string
   }
+}
+
+export interface GetMyBookingsQuery {
+  page?: number
+  limit?: number
+  status?: BookingStatus
 }

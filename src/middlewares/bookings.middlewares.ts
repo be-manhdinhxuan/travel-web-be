@@ -1,6 +1,6 @@
 import { checkSchema } from "express-validator"
 import { ObjectId } from "mongodb"
-import { PaymentProvider, ScheduleStatus } from "~/constants/enums"
+import { BookingStatus, PaymentProvider, ScheduleStatus } from "~/constants/enums"
 import HTTP_STATUS from "~/constants/httpStatus"
 import { MESSAGES } from "~/constants/messages"
 import { ErrorWithStatus } from "~/models/Errors"
@@ -108,5 +108,42 @@ export const createBookingValidator = validate(
       }
     },
     ['body']
+  )
+)
+
+export const getMyBookingsValidator = validate(
+  checkSchema(
+    {
+      page: {
+        optional: true,
+        isInt: {
+          options: { min: 1 },
+          errorMessage: MESSAGES.PAGE_MUST_BE_A_POSITIVE_INTEGER
+        },
+        toInt: true
+      },
+      limit: {
+        optional: true,
+        isInt: {
+          options: { min: 1, max: 100 },
+          errorMessage: MESSAGES.LIMIT_MUST_BE_FROM_1_TO_100
+        },
+        toInt: true
+      },
+      status: {
+        optional: true,
+        isIn: {
+          options: [[
+            BookingStatus.Pending,
+            BookingStatus.Confirmed,
+            BookingStatus.Completed,
+            BookingStatus.Cancelled
+          ]],
+          errorMessage: MESSAGES.BOOKING_STATUS_IS_INVALID
+        },
+        toInt: true
+      }
+    },
+    ['query']
   )
 )
