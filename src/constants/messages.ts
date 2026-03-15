@@ -201,5 +201,9 @@ export const MESSAGES = {
   GET_BOOKING_DETAIL_SUCCESS: 'Get booking detail success',
   BOOKING_CANNOT_BE_CANCELLED: 'Booking cannot be cancelled',
   REASON_MUST_BE_A_STRING: 'Cancellation reason must be a string',
-  CANCEL_BOOKING_SUCCESS: 'Cancel booking success'
+  CANCEL_BOOKING_SUCCESS: 'Cancel booking success',
+  FROM_DATE_IS_INVALID: 'From date is invalid',
+  TO_DATE_IS_INVALID: 'To date is invalid',
+  TO_DATE_MUST_BE_AFTER_FROM_DATE: 'To date must be after from date',
+  GET_BOOKINGS_SUCCESS: 'Get bookings success'
 } as const

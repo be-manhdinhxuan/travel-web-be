@@ -3,7 +3,7 @@ import databaseServices from './database.services'
 import { MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { Filter, ObjectId } from 'mongodb'
-import { CreateBookingReqBody, GetMyBookingsQuery } from '~/models/requests/Booking.requests'
+import { CreateBookingReqBody, GetBookingsQuery, GetMyBookingsQuery } from '~/models/requests/Booking.requests'
 import Booking from '~/models/schemas/Booking.schema'
 import { generateBookingCode } from '~/utils/generateBookingCode'
 import { BookingStatus } from '~/constants/enums'
@@ -206,6 +206,56 @@ class BookingServices {
     )
 
     return { booking: updatedBooking }
+  }
+
+  async getBookings(query: GetBookingsQuery) {
+    const page = Number(query.page) || 1
+    const limit = Number(query.limit) || 10
+    const skip = (page - 1) * limit
+
+    const filter: Filter<Booking> = {}
+
+    if (query.status !== undefined) {
+      filter.status = Number(query.status)
+    }
+
+    if (query.keyword) {
+      filter.$or = [
+        { booking_code: { $regex: query.keyword, $options: 'i' } },
+        { 'contact_info.full_name': { $regex: query.keyword, $options: 'i' } }
+      ]
+    }
+
+    if (query.tour_id) {
+      filter['tour_snapshot.tour_id'] = new ObjectId(query.tour_id)
+    }
+
+    if (query.from_date || query.to_date) {
+      filter.created_at = {}
+      if (query.from_date) {
+        filter.created_at.$gte = new Date(query.from_date)
+      }
+      if (query.to_date) {
+        const toDate = new Date(query.to_date)
+        toDate.setHours(23, 59, 59, 999) // lấy hết ngày to_date
+        filter.created_at.$lte = toDate
+      }
+    }
+
+    const [bookings, total] = await Promise.all([
+      databaseServices.bookings.find(filter).sort({ created_at: -1 }).skip(skip).limit(limit).toArray(),
+      databaseServices.bookings.countDocuments(filter)
+    ])
+
+    return {
+      bookings,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages: Math.ceil(total / limit)
+      }
+    }
   }
 }
 

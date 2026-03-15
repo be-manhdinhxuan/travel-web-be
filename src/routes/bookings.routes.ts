@@ -1,14 +1,18 @@
 import { Router } from 'express'
+import { UserRole } from '~/constants/enums'
 import {
   cancelBookingController,
   createBookingController,
+  getBookingsController,
   getMyBookingDetailController,
   getMyBookingsController
 } from '~/controllers/bookings.controllers'
+import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import {
   cancelBookingValidator,
   createBookingValidator,
+  getBookingsValidator,
   getMyBookingDetailValidator,
   getMyBookingsValidator
 } from '~/middlewares/bookings.middlewares'
@@ -86,6 +90,22 @@ bookingsRouter.patch(
   verifiedUserValidator,
   cancelBookingValidator,
   wrapRequestHandler(cancelBookingController)
+)
+
+/**
+ * Description: Get all bookings (Admin)
+ * Path: /
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ * Query: { page, limit, status, keyword, tour_id, from_date, to_date }
+ */
+bookingsRouter.get(
+  '/',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  getBookingsValidator,
+  wrapRequestHandler(getBookingsController)
 )
 
 export default bookingsRouter

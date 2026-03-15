@@ -229,3 +229,80 @@ export const cancelBookingValidator = validate(
     ['body', 'params']
   )
 )
+
+export const getBookingsValidator = validate(
+  checkSchema(
+    {
+      page: {
+        optional: true,
+        isInt: {
+          options: { min: 1 },
+          errorMessage: MESSAGES.PAGE_MUST_BE_A_POSITIVE_INTEGER
+        },
+        toInt: true
+      },
+      limit: {
+        optional: true,
+        isInt: {
+          options: { min: 1, max: 100 },
+          errorMessage: MESSAGES.LIMIT_MUST_BE_FROM_1_TO_100
+        },
+        toInt: true
+      },
+      status: {
+        optional: true,
+        isIn: {
+          options: [[
+            BookingStatus.Pending,
+            BookingStatus.Confirmed,
+            BookingStatus.Completed,
+            BookingStatus.Cancelled
+          ]],
+          errorMessage: MESSAGES.BOOKING_STATUS_IS_INVALID
+        },
+        toInt: true
+      },
+      keyword: {
+        optional: true,
+        isString: {
+          errorMessage: MESSAGES.KEYWORD_MUST_BE_A_STRING
+        },
+        trim: true
+      },
+      tour_id: {
+        optional: true,
+        custom: {
+          options: (value: string) => {
+            if (!ObjectId.isValid(value)) {
+              throw new Error(MESSAGES.TOUR_ID_IS_INVALID)
+            }
+            return true
+          }
+        }
+      },
+      from_date: {
+        optional: true,
+        isISO8601: {
+          options: { strict: true },
+          errorMessage: MESSAGES.FROM_DATE_IS_INVALID
+        }
+      },
+      to_date: {
+        optional: true,
+        isISO8601: {
+          options: { strict: true },
+          errorMessage: MESSAGES.TO_DATE_IS_INVALID
+        },
+        custom: {
+          options: (value: string, { req }) => {
+            if (req.query?.from_date && new Date(value) < new Date(req.query.from_date as string)) {
+              throw new Error(MESSAGES.TO_DATE_MUST_BE_AFTER_FROM_DATE)
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['query']
+  )
+)

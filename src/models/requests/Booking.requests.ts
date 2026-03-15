@@ -21,3 +21,13 @@ export interface GetMyBookingsQuery {
   limit?: number
   status?: BookingStatus
 }
+
+export interface GetBookingsQuery {
+  page?: number
+  limit?: number
+  status?: BookingStatus
+  keyword?: string
+  tour_id?: string
+  from_date?: string
+  to_date?: string
+}
