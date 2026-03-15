@@ -27,3 +27,12 @@ export const getMyBookingsController = async (
     result
   })
 }
+
+export const getMyBookingDetailController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const result = await bookingsService.getMyBookingDetail(id as string)
+  return res.json({
+    message: MESSAGES.GET_BOOKING_DETAIL_SUCCESS,
+    result
+  })
+}

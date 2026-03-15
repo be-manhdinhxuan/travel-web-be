@@ -1,12 +1,12 @@
-import { checkSchema } from "express-validator"
-import { ObjectId } from "mongodb"
-import { BookingStatus, PaymentProvider, ScheduleStatus } from "~/constants/enums"
-import HTTP_STATUS from "~/constants/httpStatus"
-import { MESSAGES } from "~/constants/messages"
-import { ErrorWithStatus } from "~/models/Errors"
-import databaseServices from "~/services/database.services"
-import { validate } from "~/utils/validation"
-
+import { checkSchema } from 'express-validator'
+import { ObjectId } from 'mongodb'
+import { BookingStatus, PaymentProvider, ScheduleStatus } from '~/constants/enums'
+import HTTP_STATUS from '~/constants/httpStatus'
+import { MESSAGES } from '~/constants/messages'
+import { ErrorWithStatus } from '~/models/Errors'
+import databaseServices from '~/services/database.services'
+import { validate } from '~/utils/validation'
+import { Request } from 'express'
 
 export const createBookingValidator = validate(
   checkSchema(
@@ -133,17 +133,49 @@ export const getMyBookingsValidator = validate(
       status: {
         optional: true,
         isIn: {
-          options: [[
-            BookingStatus.Pending,
-            BookingStatus.Confirmed,
-            BookingStatus.Completed,
-            BookingStatus.Cancelled
-          ]],
+          options: [[BookingStatus.Pending, BookingStatus.Confirmed, BookingStatus.Completed, BookingStatus.Cancelled]],
           errorMessage: MESSAGES.BOOKING_STATUS_IS_INVALID
         },
         toInt: true
       }
     },
     ['query']
+  )
+)
+
+export const getMyBookingDetailValidator = validate(
+  checkSchema(
+    {
+      id: {
+        custom: {
+          options: async (value: string, { req }) => {
+            if (!ObjectId.isValid(value)) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_ID_IS_INVALID,
+                status: HTTP_STATUS.BAD_REQUEST
+              })
+            }
+            const booking = await databaseServices.bookings.findOne({
+              _id: new ObjectId(value)
+            })
+            if (!booking) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            const user_id = (req as Request).decoded_authorization?.user_id
+            if (booking.user_id.toString() !== user_id) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_NOT_BELONG_TO_USER,
+                status: HTTP_STATUS.FORBIDDEN
+              })
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['params']
   )
 )

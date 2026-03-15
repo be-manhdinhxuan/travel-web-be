@@ -194,5 +194,9 @@ export const MESSAGES = {
   COUPON_MIN_ORDER_NOT_MET: 'Coupon minimum order value not met',
   COUPON_ALREADY_USED: 'Coupon code has already been used by this user',
   BOOKING_STATUS_IS_INVALID: 'Booking status is invalid',
-  GET_MY_BOOKINGS_SUCCESS: 'Get my bookings success'
+  GET_MY_BOOKINGS_SUCCESS: 'Get my bookings success',
+  BOOKING_ID_IS_INVALID: 'Booking id is invalid',
+  BOOKING_NOT_FOUND: 'Booking not found',
+  BOOKING_NOT_BELONG_TO_USER: 'Booking does not belong to user',
+  GET_BOOKING_DETAIL_SUCCESS: 'Get booking detail success'
 } as const

@@ -1,7 +1,15 @@
 import { Router } from 'express'
-import { createBookingController, getMyBookingsController } from '~/controllers/bookings.controllers'
+import {
+  createBookingController,
+  getMyBookingDetailController,
+  getMyBookingsController
+} from '~/controllers/bookings.controllers'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
-import { createBookingValidator, getMyBookingsValidator } from '~/middlewares/bookings.middlewares'
+import {
+  createBookingValidator,
+  getMyBookingDetailValidator,
+  getMyBookingsValidator
+} from '~/middlewares/bookings.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
 
@@ -45,6 +53,21 @@ bookingsRouter.get(
   verifiedUserValidator,
   getMyBookingsValidator,
   wrapRequestHandler(getMyBookingsController)
+)
+
+/**
+ * Description: Get my booking detail
+ * Path: /my/:id
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ * Param: id - booking id
+ */
+bookingsRouter.get(
+  '/my/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  getMyBookingDetailValidator,
+  wrapRequestHandler(getMyBookingDetailController)
 )
 
 export default bookingsRouter

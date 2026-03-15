@@ -169,6 +169,13 @@ class BookingServices {
       }
     }
   }
+
+  async getMyBookingDetail(id: string) {
+    const booking = await databaseServices.bookings.findOne({
+      _id: new ObjectId(id)
+    })
+    return { booking }
+  }
 }
 
 const bookingsService = new BookingServices()
