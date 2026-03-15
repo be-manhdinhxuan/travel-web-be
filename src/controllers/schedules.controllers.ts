@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { MESSAGES } from '~/constants/messages'
 import { TokenPayload } from '~/models/requests/Auth.requests'
-import { CreateScheduleReqBody, GetSchedulesQuery } from '~/models/requests/Schedule.requests'
+import { CreateScheduleReqBody, GetSchedulesQuery, UpdateScheduleReqBody } from '~/models/requests/Schedule.requests'
 import schedulesService from '~/services/schedule.services'
 
 export const createScheduleController = async (
@@ -26,6 +26,18 @@ export const getSchedulesController = async (
   const result = await schedulesService.getSchedules(tour_id as string, req.query, role)
   return res.json({
     message: MESSAGES.GET_SCHEDULES_SUCCESS,
+    result
+  })
+}
+
+export const updateScheduleController = async (
+  req: Request<ParamsDictionary, any, UpdateScheduleReqBody>,
+  res: Response
+) => {
+  const { id } = req.params
+  const result = await schedulesService.updateSchedule(id as string, req.body)
+  return res.json({
+    message: MESSAGES.UPDATE_SCHEDULE_SUCCESS,
     result
   })
 }

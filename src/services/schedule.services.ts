@@ -1,8 +1,11 @@
 import { Filter, ObjectId } from 'mongodb'
-import { CreateScheduleReqBody, GetSchedulesQuery } from '~/models/requests/Schedule.requests'
+import { CreateScheduleReqBody, GetSchedulesQuery, UpdateScheduleReqBody } from '~/models/requests/Schedule.requests'
 import Schedule from '~/models/schemas/Schedule.schema'
 import databaseServices from './database.services'
 import { ScheduleStatus, UserRole } from '~/constants/enums'
+import { ErrorWithStatus } from '~/models/Errors'
+import { MESSAGES } from '~/constants/messages'
+import HTTP_STATUS from '~/constants/httpStatus'
 
 class SchedulesService {
   async createSchedule(tour_id: string, payload: CreateScheduleReqBody) {
@@ -51,6 +54,40 @@ class SchedulesService {
       .toArray()
 
     return { schedules }
+  }
+
+  async updateSchedule(id: string, payload: UpdateScheduleReqBody) {
+    const { departure_date, return_date, ...rest } = payload
+
+    const updateData: Partial<Schedule> = {
+      ...rest,
+      ...(departure_date && { departure_date: new Date(departure_date) }),
+      ...(return_date && { return_date: new Date(return_date) }),
+      updated_at: new Date()
+    }
+
+    // không cho giảm total_slots xuống dưới số đã đặt
+    if (payload.total_slots) {
+      const schedule = await databaseServices.schedules.findOne({
+        _id: new ObjectId(id)
+      })
+      const booked = schedule!.total_slots - schedule!.available_slots
+      if (payload.total_slots < booked) {
+        throw new ErrorWithStatus({
+          message: MESSAGES.TOTAL_SLOTS_CANNOT_BE_LESS_THAN_BOOKED,
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
+      updateData.available_slots = payload.total_slots - booked
+    }
+
+    const updatedSchedule = await databaseServices.schedules.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    )
+
+    return { schedule: updatedSchedule }
   }
 }
 

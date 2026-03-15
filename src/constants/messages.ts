@@ -164,5 +164,9 @@ export const MESSAGES = {
   TOTAL_SLOTS_MUST_BE_A_POSITIVE_INTEGER: 'Total slots must be a positive integer',
   NOTE_MUST_BE_A_STRING: 'Note must be a string',
   CREATE_SCHEDULE_SUCCESS: 'Create schedule success',
-  GET_SCHEDULES_SUCCESS: 'Get schedules success'
+  GET_SCHEDULES_SUCCESS: 'Get schedules success',
+  UPDATE_SCHEDULE_SUCCESS: 'Update schedule success',
+  SCHEDULE_NOT_FOUND: 'Schedule not found',
+  SCHEDULE_STATUS_IS_INVALID: 'Schedule status is invalid',
+  TOTAL_SLOTS_CANNOT_BE_LESS_THAN_BOOKED: 'Total slots cannot be less than booked slots'
 } as const
