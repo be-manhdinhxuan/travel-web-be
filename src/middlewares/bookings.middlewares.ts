@@ -179,3 +179,53 @@ export const getMyBookingDetailValidator = validate(
     ['params']
   )
 )
+
+export const cancelBookingValidator = validate(
+  checkSchema(
+    {
+      id: {
+        custom: {
+          options: async (value: string, { req }) => {
+            if (!ObjectId.isValid(value)) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_ID_IS_INVALID,
+                status: HTTP_STATUS.BAD_REQUEST
+              })
+            }
+            const booking = await databaseServices.bookings.findOne({
+              _id: new ObjectId(value)
+            })
+            if (!booking) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            const user_id = (req as Request).decoded_authorization?.user_id
+            if (booking.user_id.toString() !== user_id) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_NOT_BELONG_TO_USER,
+                status: HTTP_STATUS.FORBIDDEN
+              })
+            }
+            if (booking.status !== BookingStatus.Pending) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_CANNOT_BE_CANCELLED,
+                status: HTTP_STATUS.BAD_REQUEST
+              })
+            }
+            return true
+          }
+        }
+      },
+      reason: {
+        optional: true,
+        isString: {
+          errorMessage: MESSAGES.REASON_MUST_BE_A_STRING
+        },
+        trim: true
+      }
+    },
+    ['body', 'params']
+  )
+)

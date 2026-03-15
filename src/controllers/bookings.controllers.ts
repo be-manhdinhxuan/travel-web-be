@@ -36,3 +36,16 @@ export const getMyBookingDetailController = async (req: Request, res: Response) 
     result
   })
 }
+
+export const cancelBookingController = async (
+  req: Request<ParamsDictionary, any, { reason?: string }>,
+  res: Response
+) => {
+  const { id } = req.params
+  const { reason } = req.body
+  const result = await bookingsService.cancelBooking(id as string, reason)
+  return res.json({
+    message: MESSAGES.CANCEL_BOOKING_SUCCESS,
+    result
+  })
+}

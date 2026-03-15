@@ -1,11 +1,13 @@
 import { Router } from 'express'
 import {
+  cancelBookingController,
   createBookingController,
   getMyBookingDetailController,
   getMyBookingsController
 } from '~/controllers/bookings.controllers'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import {
+  cancelBookingValidator,
   createBookingValidator,
   getMyBookingDetailValidator,
   getMyBookingsValidator
@@ -68,6 +70,22 @@ bookingsRouter.get(
   verifiedUserValidator,
   getMyBookingDetailValidator,
   wrapRequestHandler(getMyBookingDetailController)
+)
+
+/**
+ * Description: Cancel my booking
+ * Path: /my/:id/cancel
+ * Method: PATCH
+ * Header: { Authorization: Bearer <access_token> }
+ * Param: id - booking id
+ * Body: { reason (string) }
+ */
+bookingsRouter.patch(
+  '/my/:id/cancel',
+  accessTokenValidator,
+  verifiedUserValidator,
+  cancelBookingValidator,
+  wrapRequestHandler(cancelBookingController)
 )
 
 export default bookingsRouter

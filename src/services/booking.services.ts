@@ -6,6 +6,7 @@ import { Filter, ObjectId } from 'mongodb'
 import { CreateBookingReqBody, GetMyBookingsQuery } from '~/models/requests/Booking.requests'
 import Booking from '~/models/schemas/Booking.schema'
 import { generateBookingCode } from '~/utils/generateBookingCode'
+import { BookingStatus } from '~/constants/enums'
 
 class BookingServices {
   async createBooking(user_id: string, payload: CreateBookingReqBody) {
@@ -175,6 +176,36 @@ class BookingServices {
       _id: new ObjectId(id)
     })
     return { booking }
+  }
+
+  async cancelBooking(id: string, reason?: string) {
+    // lấy booking để biết số lượng passengers
+    const booking = await databaseServices.bookings.findOne({
+      _id: new ObjectId(id)
+    })
+
+    const totalPassengers = booking!.passengers.adults + booking!.passengers.children + booking!.passengers.babies
+
+    // hoàn lại available_slots
+    await databaseServices.schedules.updateOne(
+      { _id: booking!.schedule_id },
+      { $inc: { available_slots: totalPassengers } }
+    )
+
+    // cập nhật trạng thái booking
+    const updatedBooking = await databaseServices.bookings.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          status: BookingStatus.Cancelled,
+          cancelled_reason: reason || '',
+          updated_at: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    )
+
+    return { booking: updatedBooking }
   }
 }
 

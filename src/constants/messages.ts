@@ -198,5 +198,8 @@ export const MESSAGES = {
   BOOKING_ID_IS_INVALID: 'Booking id is invalid',
   BOOKING_NOT_FOUND: 'Booking not found',
   BOOKING_NOT_BELONG_TO_USER: 'Booking does not belong to user',
-  GET_BOOKING_DETAIL_SUCCESS: 'Get booking detail success'
+  GET_BOOKING_DETAIL_SUCCESS: 'Get booking detail success',
+  BOOKING_CANNOT_BE_CANCELLED: 'Booking cannot be cancelled',
+  REASON_MUST_BE_A_STRING: 'Cancellation reason must be a string',
+  CANCEL_BOOKING_SUCCESS: 'Cancel booking success'
 } as const
