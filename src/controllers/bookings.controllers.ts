@@ -1,7 +1,12 @@
 import { Request, Response } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { MESSAGES } from '~/constants/messages'
-import { CreateBookingReqBody, GetBookingsQuery, GetMyBookingsQuery } from '~/models/requests/Booking.requests'
+import {
+  CreateBookingReqBody,
+  GetBookingsQuery,
+  GetMyBookingsQuery,
+  UpdateBookingStatusReqBody
+} from '~/models/requests/Booking.requests'
 import bookingsService from '~/services/booking.services'
 
 export const createBookingController = async (
@@ -66,6 +71,18 @@ export const getBookingDetailController = async (req: Request, res: Response) =>
   const result = await bookingsService.getBookingDetail(id as string)
   return res.json({
     message: MESSAGES.GET_BOOKING_DETAIL_SUCCESS,
+    result
+  })
+}
+
+export const updateBookingStatusController = async (
+  req: Request<ParamsDictionary, any, UpdateBookingStatusReqBody>,
+  res: Response
+) => {
+  const { id } = req.params
+  const result = await bookingsService.updateBookingStatus(id as string, req.body)
+  return res.json({
+    message: MESSAGES.UPDATE_BOOKING_STATUS_SUCCESS,
     result
   })
 }

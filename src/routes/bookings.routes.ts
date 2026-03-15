@@ -6,7 +6,8 @@ import {
   getBookingDetailController,
   getBookingsController,
   getMyBookingDetailController,
-  getMyBookingsController
+  getMyBookingsController,
+  updateBookingStatusController
 } from '~/controllers/bookings.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
@@ -16,7 +17,8 @@ import {
   getBookingDetailValidator,
   getBookingsValidator,
   getMyBookingDetailValidator,
-  getMyBookingsValidator
+  getMyBookingsValidator,
+  updateBookingStatusValidator
 } from '~/middlewares/bookings.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
@@ -124,6 +126,26 @@ bookingsRouter.get(
   authorize(UserRole.Admin),
   getBookingDetailValidator,
   wrapRequestHandler(getBookingDetailController)
+)
+
+/**
+ * Description: Update booking status (Admin)
+ * Path: /:id/status
+ * Method: PATCH
+ * Header: { Authorization: Bearer <access_token> }
+ * Param: id - booking id
+ * Body: {
+ *   status (int, required) — 1: confirmed, 2: completed, 3: cancelled
+ *   cancelled_reason (string) — bắt buộc nếu status = 3
+ * }
+ */
+bookingsRouter.patch(
+  '/:id/status',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  updateBookingStatusValidator,
+  wrapRequestHandler(updateBookingStatusController)
 )
 
 export default bookingsRouter

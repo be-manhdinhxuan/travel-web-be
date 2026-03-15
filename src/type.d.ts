@@ -2,11 +2,13 @@ import { Request } from 'express'
 import User from './models/schemas/User.schema'
 import { TokenPayload } from './models/requests/Auth.requests'
 import Tour from './models/schemas/Tour.schema'
+import Booking from './models/schemas/Booking.schema'
 
 declare module 'express' {
   interface Request {
     user?: User
     tour?: Tour
+    booking?: Booking
     decoded_authorization?: TokenPayload
     decoded_refresh_token?: TokenPayload
     decoded_email_verify_token?: TokenPayload

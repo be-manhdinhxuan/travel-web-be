@@ -3,7 +3,12 @@ import databaseServices from './database.services'
 import { MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { Filter, ObjectId } from 'mongodb'
-import { CreateBookingReqBody, GetBookingsQuery, GetMyBookingsQuery } from '~/models/requests/Booking.requests'
+import {
+  CreateBookingReqBody,
+  GetBookingsQuery,
+  GetMyBookingsQuery,
+  UpdateBookingStatusReqBody
+} from '~/models/requests/Booking.requests'
 import Booking from '~/models/schemas/Booking.schema'
 import { generateBookingCode } from '~/utils/generateBookingCode'
 import { BookingStatus } from '~/constants/enums'
@@ -263,6 +268,38 @@ class BookingServices {
       _id: new ObjectId(id)
     })
     return { booking }
+  }
+
+  async updateBookingStatus(id: string, payload: UpdateBookingStatusReqBody) {
+    const { status, cancelled_reason } = payload
+
+    const booking = await databaseServices.bookings.findOne({
+      _id: new ObjectId(id)
+    })
+
+    // hoàn lại available_slots khi admin hủy booking
+    if (status === BookingStatus.Cancelled) {
+      const totalPassengers = booking!.passengers.adults + booking!.passengers.children + booking!.passengers.babies
+
+      await databaseServices.schedules.updateOne(
+        { _id: booking!.schedule_id },
+        { $inc: { available_slots: totalPassengers } }
+      )
+    }
+
+    const updatedBooking = await databaseServices.bookings.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          status,
+          ...(cancelled_reason && { cancelled_reason }),
+          updated_at: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    )
+
+    return { booking: updatedBooking }
   }
 }
 

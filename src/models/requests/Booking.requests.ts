@@ -31,3 +31,8 @@ export interface GetBookingsQuery {
   from_date?: string
   to_date?: string
 }
+
+export interface UpdateBookingStatusReqBody {
+  status: BookingStatus
+  cancelled_reason?: string
+}

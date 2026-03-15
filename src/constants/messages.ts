@@ -205,5 +205,8 @@ export const MESSAGES = {
   FROM_DATE_IS_INVALID: 'From date is invalid',
   TO_DATE_IS_INVALID: 'To date is invalid',
   TO_DATE_MUST_BE_AFTER_FROM_DATE: 'To date must be after from date',
-  GET_BOOKINGS_SUCCESS: 'Get bookings success'
+  GET_BOOKINGS_SUCCESS: 'Get bookings success',
+  BOOKING_STATUS_IS_REQUIRED: 'Booking status is required',
+  CANCELLED_REASON_IS_REQUIRED: 'Cancelled reason is required',
+  UPDATE_BOOKING_STATUS_SUCCESS: 'Update booking status success'
 } as const

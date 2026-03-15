@@ -331,3 +331,64 @@ export const getBookingDetailValidator = validate(
     ['params']
   )
 )
+
+export const updateBookingStatusValidator = validate(
+  checkSchema(
+    {
+      id: {
+        custom: {
+          options: async (value: string, { req }) => {
+            if (!ObjectId.isValid(value)) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_ID_IS_INVALID,
+                status: HTTP_STATUS.BAD_REQUEST
+              })
+            }
+            const booking = await databaseServices.bookings.findOne({
+              _id: new ObjectId(value)
+            })
+            if (!booking) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            ;(req as Request).booking = booking
+            return true
+          }
+        }
+      },
+      status: {
+        notEmpty: {
+          errorMessage: MESSAGES.BOOKING_STATUS_IS_REQUIRED
+        },
+        isIn: {
+          options: [[
+            BookingStatus.Confirmed,
+            BookingStatus.Completed,
+            BookingStatus.Cancelled
+          ]],
+          errorMessage: MESSAGES.BOOKING_STATUS_IS_INVALID
+        },
+        toInt: true
+      },
+      cancelled_reason: {
+        custom: {
+          options: (value: string, { req }) => {
+            const status = Number(req.body?.status)
+            if (status === BookingStatus.Cancelled && !value) {
+              throw new Error(MESSAGES.CANCELLED_REASON_IS_REQUIRED)
+            }
+            return true
+          }
+        },
+        optional: true,
+        isString: {
+          errorMessage: MESSAGES.REASON_MUST_BE_A_STRING
+        },
+        trim: true
+      }
+    },
+    ['body', 'params']
+  )
+)
