@@ -95,3 +95,12 @@ export const createScheduleValidator = validate(
     ['body', 'params']
   )
 )
+
+export const getSchedulesValidator = validate(
+  checkSchema(
+    {
+      tour_id: idTourValidator
+    },
+    ['params', 'query']
+  )
+)

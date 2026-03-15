@@ -163,5 +163,6 @@ export const MESSAGES = {
   TOTAL_SLOTS_IS_REQUIRED: 'Total slots is required',
   TOTAL_SLOTS_MUST_BE_A_POSITIVE_INTEGER: 'Total slots must be a positive integer',
   NOTE_MUST_BE_A_STRING: 'Note must be a string',
-  CREATE_SCHEDULE_SUCCESS: 'Create schedule success'
+  CREATE_SCHEDULE_SUCCESS: 'Create schedule success',
+  GET_SCHEDULES_SUCCESS: 'Get schedules success'
 } as const

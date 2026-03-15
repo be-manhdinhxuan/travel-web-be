@@ -7,3 +7,8 @@ export interface CreateScheduleReqBody {
   total_slots: number
   note?: string
 }
+
+export interface GetSchedulesQuery {
+  departure_date?: string
+  num_people?: number
+}

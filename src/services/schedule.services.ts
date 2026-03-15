@@ -1,7 +1,8 @@
-import { ObjectId } from 'mongodb'
-import { CreateScheduleReqBody } from '~/models/requests/Schedule.requests'
+import { Filter, ObjectId } from 'mongodb'
+import { CreateScheduleReqBody, GetSchedulesQuery } from '~/models/requests/Schedule.requests'
 import Schedule from '~/models/schemas/Schedule.schema'
 import databaseServices from './database.services'
+import { ScheduleStatus, UserRole } from '~/constants/enums'
 
 class SchedulesService {
   async createSchedule(tour_id: string, payload: CreateScheduleReqBody) {
@@ -21,6 +22,35 @@ class SchedulesService {
     return {
       schedule: { ...schedule, _id: result.insertedId }
     }
+  }
+
+  async getSchedules(tour_id: string, query: GetSchedulesQuery, role: UserRole) {
+    const { departure_date, num_people } = query
+
+    const filter: Filter<Schedule> = {
+      tour_id: new ObjectId(tour_id)
+    }
+
+    // admin xem được tất cả status, user/guest chỉ xem available
+    if (role !== UserRole.Admin) {
+      filter.status = { $in: [ScheduleStatus.Available, ScheduleStatus.Full] }
+      filter.departure_date = { $gte: new Date() }
+    }
+
+    if (departure_date) {
+      filter.departure_date = { $gte: new Date(departure_date) }
+    }
+
+    if (num_people) {
+      filter.available_slots = { $gte: Number(num_people) }
+    }
+
+    const schedules = await databaseServices.schedules
+      .find(filter)
+      .sort({ departure_date: 1 }) // sắp xếp theo ngày gần nhất
+      .toArray()
+
+    return { schedules }
   }
 }
 

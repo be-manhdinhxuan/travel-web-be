@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
-import { createScheduleController } from '~/controllers/schedules.controllers'
+import { createScheduleController, getSchedulesController } from '~/controllers/schedules.controllers'
 import {
   createTourController,
   deleteTourController,
@@ -12,7 +12,7 @@ import {
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { optionalAccessTokenValidator } from '~/middlewares/categories.middlewares'
-import { createScheduleValidator } from '~/middlewares/schedules.middlewares'
+import { createScheduleValidator, getSchedulesValidator } from '~/middlewares/schedules.middlewares'
 import {
   createTourValidator,
   deleteTourValidator,
@@ -159,6 +159,19 @@ toursRouter.post(
   authorize(UserRole.Admin),
   createScheduleValidator,
   wrapRequestHandler(createScheduleController)
+)
+
+/**
+ * Description: Get schedule of a tour
+ * Path: /:tour_id/schedules
+ * Method: GET
+ * Param: tour_id
+ */
+toursRouter.get(
+  '/:tour_id/schedules',
+  optionalAccessTokenValidator,
+  getSchedulesValidator,
+  wrapRequestHandler(getSchedulesController)
 )
 
 export default toursRouter
