@@ -147,5 +147,21 @@ export const MESSAGES = {
   TOUR_STATUS_IS_REQUIRED: 'Tour status is required',
   UPDATE_TOUR_STATUS_SUCCESS: 'Update tour status success',
   DELETE_TOUR_SUCCESS: 'Delete tour success',
-  TOUR_HAS_BOOKINGS: 'Tour has bookings, cannot be deleted'
+  TOUR_HAS_BOOKINGS: 'Tour has bookings, cannot be deleted',
+
+  DEPARTURE_DATE_IS_REQUIRED: 'Departure date is required',
+  DEPARTURE_DATE_MUST_BE_IN_FUTURE: 'Departure date must be in the future',
+  RETURN_DATE_IS_REQUIRED: 'Return date is required',
+  RETURN_DATE_IS_INVALID: 'Return date is invalid',
+  RETURN_DATE_MUST_BE_AFTER_DEPARTURE_DATE: 'Return date must be after departure date',
+  PRICE_ADULT_IS_REQUIRED: 'Price for adult is required',
+  PRICE_ADULT_MUST_BE_A_POSITIVE_INTEGER: 'Price for adult must be a positive integer',
+  PRICE_CHILD_IS_REQUIRED: 'Price for child is required',
+  PRICE_CHILD_MUST_BE_NON_NEGATIVE: 'Price for child must be a non-negative integer',
+  PRICE_BABY_IS_REQUIRED: 'Price for baby is required',
+  PRICE_BABY_MUST_BE_NON_NEGATIVE: 'Price for baby must be a non-negative integer',
+  TOTAL_SLOTS_IS_REQUIRED: 'Total slots is required',
+  TOTAL_SLOTS_MUST_BE_A_POSITIVE_INTEGER: 'Total slots must be a positive integer',
+  NOTE_MUST_BE_A_STRING: 'Note must be a string',
+  CREATE_SCHEDULE_SUCCESS: 'Create schedule success'
 } as const

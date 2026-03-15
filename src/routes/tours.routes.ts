@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
+import { createScheduleController } from '~/controllers/schedules.controllers'
 import {
   createTourController,
   deleteTourController,
@@ -11,12 +12,12 @@ import {
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { optionalAccessTokenValidator } from '~/middlewares/categories.middlewares'
+import { createScheduleValidator } from '~/middlewares/schedules.middlewares'
 import {
   createTourValidator,
   deleteTourValidator,
   getDetailTourValidator,
   getToursValidator,
-  idTourValidator,
   updateTourStatusValidator,
   updateTourValidator
 } from '~/middlewares/tours.middlewares'
@@ -135,6 +136,29 @@ toursRouter.delete(
   authorize(UserRole.Admin),
   deleteTourValidator,
   wrapRequestHandler(deleteTourController)
+)
+
+/**
+ * Description: Create schedule of a tour
+ * Path: /:tour_id/schedules
+ * Method: POST
+ * Header: { Authorization: Bearer <access_token>}
+ * Param: id - tour id
+ * Body: {departure_date (Date, required)
+return_date (Date, required)
+price_adult (number, required),
+price_child (number, required)
+price_baby (number, required)
+total_slots (number, required)}
+note (string)}
+ */
+toursRouter.post(
+  '/:tour_id/schedules',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  createScheduleValidator,
+  wrapRequestHandler(createScheduleController)
 )
 
 export default toursRouter
