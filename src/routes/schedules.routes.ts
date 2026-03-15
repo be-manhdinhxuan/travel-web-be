@@ -1,9 +1,9 @@
 import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
-import { updateScheduleController } from '~/controllers/schedules.controllers'
+import { deleteScheduleController, updateScheduleController } from '~/controllers/schedules.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
-import { updateScheduleValidator } from '~/middlewares/schedules.middlewares'
+import { deleteScheduleValidator, updateScheduleValidator } from '~/middlewares/schedules.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
 
@@ -31,6 +31,22 @@ schedulesRouter.put(
   authorize(UserRole.Admin),
   updateScheduleValidator,
   wrapRequestHandler(updateScheduleController)
+)
+
+/**
+ * Description: Delete schedule of a tour
+ * Path: /:id
+ * Method: DELETE
+ * Header: { Authorization: Bearer <access_token>}
+ * Param: id - tour id
+ */
+schedulesRouter.delete(
+  '/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  deleteScheduleValidator,
+  wrapRequestHandler(deleteScheduleController)
 )
 
 export default schedulesRouter

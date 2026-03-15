@@ -221,3 +221,12 @@ export const updateScheduleValidator = validate(
     ['body', 'params']
   )
 )
+
+export const deleteScheduleValidator = validate(
+  checkSchema(
+    {
+      id: idScheduleValidator
+    },
+    ['params']
+  )
+)

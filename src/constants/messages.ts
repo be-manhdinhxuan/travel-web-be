@@ -168,5 +168,7 @@ export const MESSAGES = {
   UPDATE_SCHEDULE_SUCCESS: 'Update schedule success',
   SCHEDULE_NOT_FOUND: 'Schedule not found',
   SCHEDULE_STATUS_IS_INVALID: 'Schedule status is invalid',
-  TOTAL_SLOTS_CANNOT_BE_LESS_THAN_BOOKED: 'Total slots cannot be less than booked slots'
+  TOTAL_SLOTS_CANNOT_BE_LESS_THAN_BOOKED: 'Total slots cannot be less than booked slots',
+  DELETE_SCHEDULE_SUCCESS: 'Delete schedule success',
+  SCHEDULE_HAS_BOOKINGS: 'Schedule has bookings, cannot be deleted'
 } as const

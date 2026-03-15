@@ -89,6 +89,22 @@ class SchedulesService {
 
     return { schedule: updatedSchedule }
   }
+
+  async deleteSchedule(id: string) {
+    const bookingCount = await databaseServices.bookings.countDocuments({
+      schedule_id: new ObjectId(id)
+    })
+
+    if (bookingCount > 0) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.SCHEDULE_HAS_BOOKINGS,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    await databaseServices.schedules.deleteOne({ _id: new ObjectId(id) })
+
+  }
 }
 
 const schedulesService = new SchedulesService()
