@@ -7,7 +7,7 @@ import {
   GetMyBookingsQuery,
   UpdateBookingStatusReqBody
 } from '~/models/requests/Booking.requests'
-import bookingsService from '~/services/booking.services'
+import bookingsService from '~/services/bookings.services'
 
 export const createBookingController = async (
   req: Request<ParamsDictionary, any, CreateBookingReqBody>,

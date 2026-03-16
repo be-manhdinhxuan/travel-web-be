@@ -9,9 +9,12 @@ import categoriesRouter from './routes/categories.routes'
 import toursRouter from './routes/tours.routes'
 import schedulesRouter from './routes/schedules.routes'
 import bookingsRouter from './routes/bookings.routes'
+import paymentsRouter from './routes/payments.routes'
+import bookingExpiryJob from './jobs/booking-expiry.job'
 
 config()
 databaseService.connect()
+bookingExpiryJob.start()
 const app = express()
 const port = process.env.PORT || 5000
 
@@ -34,6 +37,9 @@ app.use('/api/schedules', schedulesRouter)
 
 // Booking
 app.use('/api/bookings', bookingsRouter)
+
+// Payment
+app.use('/api/payments', paymentsRouter)
 
 app.use(defaultErrorHandler)
 

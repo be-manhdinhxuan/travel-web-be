@@ -208,5 +208,8 @@ export const MESSAGES = {
   GET_BOOKINGS_SUCCESS: 'Get bookings success',
   BOOKING_STATUS_IS_REQUIRED: 'Booking status is required',
   CANCELLED_REASON_IS_REQUIRED: 'Cancelled reason is required',
-  UPDATE_BOOKING_STATUS_SUCCESS: 'Update booking status success'
+  UPDATE_BOOKING_STATUS_SUCCESS: 'Update booking status success',
+  BOOKING_ID_IS_REQUIRED: 'Booking id is required',
+  BOOKING_ALREADY_PAID: 'Booking already paid',
+  CREATE_PAYMENT_SUCCESS: 'Create payment success'
 } as const
