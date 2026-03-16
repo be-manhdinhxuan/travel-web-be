@@ -6,7 +6,7 @@ import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import databaseServices from '~/services/database.services'
 import { validate } from '~/utils/validation'
-import { Request } from 'express'
+import { Request, Response } from 'express'
 
 export const createMomoPaymentValidator = validate(
   checkSchema(
@@ -52,3 +52,15 @@ export const createMomoPaymentValidator = validate(
     ['body']
   )
 )
+
+export const momoReturnController = async (req: Request, res: Response) => {
+  const { resultCode, orderId } = req.query
+
+  const clientUrl = process.env.CLIENT_URL
+
+  if (resultCode === '0') {
+    return res.redirect(`${clientUrl}/payment/success?orderId=${orderId}`)
+  }
+
+  return res.redirect(`${clientUrl}/payment/failed?orderId=${orderId}`)
+}
