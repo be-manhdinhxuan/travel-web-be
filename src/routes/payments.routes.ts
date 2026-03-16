@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { createMomoPaymentController } from '~/controllers/payments.controllers'
+import { createMomoPaymentController, momoIpnController } from '~/controllers/payments.controllers'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { createMomoPaymentValidator } from '~/middlewares/payments.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
@@ -21,5 +21,13 @@ paymentsRouter.post(
   createMomoPaymentValidator,
   wrapRequestHandler(createMomoPaymentController)
 )
+
+/**
+ * Description: MoMo IPN callback
+ * Path: /momo/ipn
+ * Method: POST
+ * Body: MoMo IPN payload
+ */
+paymentsRouter.post('/momo/ipn', wrapRequestHandler(momoIpnController))
 
 export default paymentsRouter

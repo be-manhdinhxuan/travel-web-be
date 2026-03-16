@@ -15,3 +15,8 @@ export const createMomoPaymentController = async (
     result
   })
 }
+
+export const momoIpnController = async (req: Request, res: Response) => {
+  await paymentsService.handleMomoIpn(req.body)
+  return res.status(204).send()
+}
