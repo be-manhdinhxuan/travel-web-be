@@ -1,9 +1,10 @@
 import e, { Router } from 'express'
 import { UserRole } from '~/constants/enums'
-import { createCouponController, getCouponsController } from '~/controllers/coupons.controllers'
+import { createCouponController, getCouponsController, updateCouponController } from '~/controllers/coupons.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
-import { createCouponValidator, getCouponsValidator } from '~/middlewares/coupons.middlewares'
+import { checkAllowedFields } from '~/middlewares/common.middlewares'
+import { createCouponValidator, getCouponsValidator, updateCouponValidator } from '~/middlewares/coupons.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
 
@@ -39,6 +40,24 @@ couponsRouter.get(
   authorize(UserRole.Admin),
   getCouponsValidator,
   wrapRequestHandler(getCouponsController)
+)
+
+/**
+ * Description: Update coupon
+ * Path: /:id
+ * Method: PUT
+ * Header: { Authorization: Bearer <access_token> }
+ * Param: id - coupon id
+ * Body: { code, value, min_order_value, max_usage, expires_at } (optional)
+ */
+couponsRouter.put(
+  '/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  checkAllowedFields(['code', 'value', 'min_order_value', 'max_usage', 'expires_at']),
+  updateCouponValidator,
+  wrapRequestHandler(updateCouponController)
 )
 
 export default couponsRouter

@@ -12,3 +12,11 @@ export interface GetCouponsQuery {
   is_active?: boolean
   keyword?: string
 }
+
+export interface UpdateCouponReqBody {
+  code?: string
+  value?: number
+  min_order_value?: number
+  max_usage?: number
+  expires_at?: string
+}

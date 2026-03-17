@@ -1,7 +1,8 @@
-import { CreateCouponReqBody, GetCouponsQuery } from '~/models/requests/Coupon.requests'
+import { CreateCouponReqBody, GetCouponsQuery, UpdateCouponReqBody } from '~/models/requests/Coupon.requests'
 import Coupon from '~/models/schemas/Coupon.schema'
 import databaseServices from './database.services'
-import { Filter } from 'mongodb'
+import { Filter, ObjectId } from 'mongodb'
+import { Request } from 'express'
 
 class CouponsService {
   async createCoupon(payload: CreateCouponReqBody) {
@@ -49,6 +50,25 @@ class CouponsService {
         total_pages: Math.ceil(total / limit)
       }
     }
+  }
+
+  async updateCoupon(id: string, payload: UpdateCouponReqBody) {
+    const { expires_at, code, ...rest } = payload
+
+    const updateData: Partial<Coupon> = {
+      ...rest,
+      ...(code && { code: code.toUpperCase() }),
+      ...(expires_at && { expires_at: new Date(expires_at) }),
+      updated_at: new Date()
+    }
+
+    const updatedCoupon = await databaseServices.coupons.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    )
+
+    return { coupon: updatedCoupon }
   }
 }
 

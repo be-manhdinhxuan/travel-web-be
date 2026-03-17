@@ -227,5 +227,8 @@ export const MESSAGES = {
   COUPON_EXPIRES_AT_MUST_BE_IN_FUTURE: 'Coupon expires at must be in the future',
   CREATE_COUPON_SUCCESS: 'Create coupon success',
   IS_ACTIVE_MUST_BE_A_BOOLEAN: 'is_active must be a boolean',
-  GET_COUPONS_SUCCESS: 'Get coupons success'
+  GET_COUPONS_SUCCESS: 'Get coupons success',
+  COUPON_ID_IS_INVALID: 'Coupon id is invalid',
+  COUPON_NOT_FOUND: 'Coupon not found',
+  UPDATE_COUPON_SUCCESS: 'Update coupon success'
 } as const
