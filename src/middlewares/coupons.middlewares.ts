@@ -222,3 +222,33 @@ export const updateCouponValidator = validate(
     ['body', 'params']
   )
 )
+
+export const couponIdValidator = validate(
+  checkSchema(
+    {
+      id: {
+        custom: {
+          options: async (value: string) => {
+            if (!ObjectId.isValid(value)) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.COUPON_ID_IS_INVALID,
+                status: HTTP_STATUS.BAD_REQUEST
+              })
+            }
+            const coupon = await databaseServices.coupons.findOne({
+              _id: new ObjectId(value)
+            })
+            if (!coupon) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.COUPON_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['params']
+  )
+)

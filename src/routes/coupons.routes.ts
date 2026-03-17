@@ -1,10 +1,20 @@
 import e, { Router } from 'express'
 import { UserRole } from '~/constants/enums'
-import { createCouponController, getCouponsController, updateCouponController } from '~/controllers/coupons.controllers'
+import {
+  createCouponController,
+  getCouponsController,
+  toggleCouponController,
+  updateCouponController
+} from '~/controllers/coupons.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { checkAllowedFields } from '~/middlewares/common.middlewares'
-import { createCouponValidator, getCouponsValidator, updateCouponValidator } from '~/middlewares/coupons.middlewares'
+import {
+  couponIdValidator,
+  createCouponValidator,
+  getCouponsValidator,
+  updateCouponValidator
+} from '~/middlewares/coupons.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
 
@@ -58,6 +68,22 @@ couponsRouter.put(
   checkAllowedFields(['code', 'value', 'min_order_value', 'max_usage', 'expires_at']),
   updateCouponValidator,
   wrapRequestHandler(updateCouponController)
+)
+
+/**
+ * Description: Toggle coupon status
+ * Path: /:id/toggle
+ * Method: PATCH
+ * Header: { Authorization: Bearer <access_token> }
+ * Param: id - coupon id
+ */
+couponsRouter.patch(
+  '/:id/toggle',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  couponIdValidator,
+  wrapRequestHandler(toggleCouponController)
 )
 
 export default couponsRouter

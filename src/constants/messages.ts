@@ -230,5 +230,6 @@ export const MESSAGES = {
   GET_COUPONS_SUCCESS: 'Get coupons success',
   COUPON_ID_IS_INVALID: 'Coupon id is invalid',
   COUPON_NOT_FOUND: 'Coupon not found',
-  UPDATE_COUPON_SUCCESS: 'Update coupon success'
+  UPDATE_COUPON_SUCCESS: 'Update coupon success',
+  TOGGLE_COUPON_SUCCESS: 'Toggle coupon success'
 } as const

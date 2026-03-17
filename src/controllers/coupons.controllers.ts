@@ -37,3 +37,12 @@ export const updateCouponController = async (
     result
   })
 }
+
+export const toggleCouponController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const result = await couponsService.toggleCoupon(id as string)
+  return res.json({
+    message: MESSAGES.TOGGLE_COUPON_SUCCESS,
+    result
+  })
+}

@@ -70,6 +70,25 @@ class CouponsService {
 
     return { coupon: updatedCoupon }
   }
+
+  async toggleCoupon(id: string) {
+    const coupon = await databaseServices.coupons.findOne({
+      _id: new ObjectId(id)
+    })
+
+    const updatedCoupon = await databaseServices.coupons.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          is_active: !coupon!.is_active
+        },
+        $currentDate: { updated_at: true }
+      },
+      { returnDocument: 'after' }
+    )
+
+    return { coupon: updatedCoupon }
+  }
 }
 
 const couponsService = new CouponsService()
