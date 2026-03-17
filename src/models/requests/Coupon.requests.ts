@@ -20,3 +20,8 @@ export interface UpdateCouponReqBody {
   max_usage?: number
   expires_at?: string
 }
+
+export interface ValidateCouponReqBody {
+  code: string
+  order_value: number
+}

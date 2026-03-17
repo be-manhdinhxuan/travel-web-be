@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { CreateCouponReqBody, GetCouponsQuery, UpdateCouponReqBody } from '~/models/requests/Coupon.requests'
+import { CreateCouponReqBody, GetCouponsQuery, UpdateCouponReqBody, ValidateCouponReqBody } from '~/models/requests/Coupon.requests'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { MESSAGES } from '~/constants/messages'
 import couponsService from '~/services/coupons.services'
@@ -43,6 +43,18 @@ export const toggleCouponController = async (req: Request, res: Response) => {
   const result = await couponsService.toggleCoupon(id as string)
   return res.json({
     message: MESSAGES.TOGGLE_COUPON_SUCCESS,
+    result
+  })
+}
+
+export const validateCouponController = async (
+  req: Request<ParamsDictionary, any, ValidateCouponReqBody>,
+  res: Response
+) => {
+  const user_id = req.decoded_authorization?.user_id as string
+  const result = await couponsService.validateCoupon(req.body, user_id)
+  return res.json({
+    message: MESSAGES.VALIDATE_COUPON_SUCCESS,
     result
   })
 }

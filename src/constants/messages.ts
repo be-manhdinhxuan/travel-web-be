@@ -231,5 +231,11 @@ export const MESSAGES = {
   COUPON_ID_IS_INVALID: 'Coupon id is invalid',
   COUPON_NOT_FOUND: 'Coupon not found',
   UPDATE_COUPON_SUCCESS: 'Update coupon success',
-  TOGGLE_COUPON_SUCCESS: 'Toggle coupon success'
+  TOGGLE_COUPON_SUCCESS: 'Toggle coupon success',
+  ORDER_VALUE_IS_REQUIRED: 'Order value is required',
+  ORDER_VALUE_MUST_BE_A_POSITIVE_INTEGER: 'Order value must be a positive integer',
+  VALIDATE_COUPON_SUCCESS: 'Validate coupon success',
+  COUPON_IS_INACTIVE: 'Coupon is inactive',
+  COUPON_EXPIRED: 'Coupon is expired',
+  COUPON_MAX_USAGE_REACHED: 'Coupon max usage reached'
 } as const

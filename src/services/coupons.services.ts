@@ -1,8 +1,14 @@
-import { CreateCouponReqBody, GetCouponsQuery, UpdateCouponReqBody } from '~/models/requests/Coupon.requests'
+import {
+  CreateCouponReqBody,
+  GetCouponsQuery,
+  UpdateCouponReqBody,
+  ValidateCouponReqBody
+} from '~/models/requests/Coupon.requests'
 import Coupon from '~/models/schemas/Coupon.schema'
 import databaseServices from './database.services'
 import { Filter, ObjectId } from 'mongodb'
 import { Request } from 'express'
+import { MESSAGES } from '~/constants/messages'
 
 class CouponsService {
   async createCoupon(payload: CreateCouponReqBody) {
@@ -88,6 +94,92 @@ class CouponsService {
     )
 
     return { coupon: updatedCoupon }
+  }
+
+  async validateCoupon(payload: ValidateCouponReqBody, user_id: string) {
+    const { code, order_value } = payload
+
+    const coupon = await databaseServices.coupons.findOne({
+      code: code.toUpperCase()
+    })
+
+    // coupon không tồn tại
+    if (!coupon) {
+      return {
+        is_valid: false,
+        discount_amount: 0,
+        final_price: order_value,
+        coupon: null,
+        reason: MESSAGES.COUPON_NOT_FOUND
+      }
+    }
+
+    // coupon không active
+    if (!coupon.is_active) {
+      return {
+        is_valid: false,
+        discount_amount: 0,
+        final_price: order_value,
+        coupon: null,
+        reason: MESSAGES.COUPON_IS_INACTIVE
+      }
+    }
+
+    // coupon hết hạn
+    if (coupon.expires_at < new Date()) {
+      return {
+        is_valid: false,
+        discount_amount: 0,
+        final_price: order_value,
+        coupon: null,
+        reason: MESSAGES.COUPON_EXPIRED
+      }
+    }
+
+    // coupon hết lượt
+    if (coupon.used_count >= coupon.max_usage) {
+      return {
+        is_valid: false,
+        discount_amount: 0,
+        final_price: order_value,
+        coupon: null,
+        reason: MESSAGES.COUPON_MAX_USAGE_REACHED
+      }
+    }
+
+    // đơn hàng không đạt tối thiểu
+    if (order_value < coupon.min_order_value) {
+      return {
+        is_valid: false,
+        discount_amount: 0,
+        final_price: order_value,
+        coupon: null,
+        reason: MESSAGES.COUPON_MIN_ORDER_NOT_MET
+      }
+    }
+
+    // user đã dùng coupon này rồi
+    const alreadyUsed = coupon.used_by.some((id) => id.toString() === user_id)
+    if (alreadyUsed) {
+      return {
+        is_valid: false,
+        discount_amount: 0,
+        final_price: order_value,
+        coupon: null,
+        reason: MESSAGES.COUPON_ALREADY_USED
+      }
+    }
+
+    // hợp lệ — tính tiền giảm
+    const discount_amount = Math.min(coupon.value, order_value)
+    const final_price = order_value - discount_amount
+
+    return {
+      is_valid: true,
+      discount_amount,
+      final_price,
+      coupon
+    }
   }
 }
 

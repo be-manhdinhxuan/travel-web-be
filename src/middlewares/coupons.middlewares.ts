@@ -252,3 +252,31 @@ export const couponIdValidator = validate(
     ['params']
   )
 )
+
+export const validateCouponValidator = validate(
+  checkSchema(
+    {
+      code: {
+        notEmpty: {
+          errorMessage: MESSAGES.COUPON_CODE_IS_REQUIRED
+        },
+        isString: {
+          errorMessage: MESSAGES.COUPON_CODE_MUST_BE_A_STRING
+        },
+        trim: true,
+        toUpperCase: true
+      },
+      order_value: {
+        notEmpty: {
+          errorMessage: MESSAGES.ORDER_VALUE_IS_REQUIRED
+        },
+        isInt: {
+          options: { min: 1 },
+          errorMessage: MESSAGES.ORDER_VALUE_MUST_BE_A_POSITIVE_INTEGER
+        },
+        toInt: true
+      }
+    },
+    ['body']
+  )
+)

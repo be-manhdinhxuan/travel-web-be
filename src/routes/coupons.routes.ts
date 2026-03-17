@@ -4,7 +4,8 @@ import {
   createCouponController,
   getCouponsController,
   toggleCouponController,
-  updateCouponController
+  updateCouponController,
+  validateCouponController
 } from '~/controllers/coupons.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
@@ -13,7 +14,8 @@ import {
   couponIdValidator,
   createCouponValidator,
   getCouponsValidator,
-  updateCouponValidator
+  updateCouponValidator,
+  validateCouponValidator
 } from '~/middlewares/coupons.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
@@ -84,6 +86,21 @@ couponsRouter.patch(
   authorize(UserRole.Admin),
   couponIdValidator,
   wrapRequestHandler(toggleCouponController)
+)
+
+/**
+ * Description: Validate coupon
+ * Path: /validate
+ * Method: POST
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { code (string, required), order_value (number, required) }
+ */
+couponsRouter.post(
+  '/validate',
+  accessTokenValidator,
+  verifiedUserValidator,
+  validateCouponValidator,
+  wrapRequestHandler(validateCouponController)
 )
 
 export default couponsRouter
