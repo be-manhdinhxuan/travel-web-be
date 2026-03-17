@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { MESSAGES } from '~/constants/messages'
 import paymentsService from '~/services/payments.services'
+import crypto from 'crypto'
 
 export const createMomoPaymentController = async (
   req: Request<ParamsDictionary, any, { booking_id: string }>,
@@ -33,4 +34,49 @@ export const createVnpayPaymentController = async (
     message: MESSAGES.CREATE_PAYMENT_SUCCESS,
     result
   })
+}
+
+export const vnpayReturnController = async (req: Request, res: Response) => {
+  const vnpParams = { ...req.query } as Record<string, string>
+  const clientUrl = process.env.CLIENT_URL
+  const orderId = vnpParams['vnp_TxnRef']
+
+  // xác thực chữ ký
+  const secureHash = vnpParams['vnp_SecureHash']
+  delete vnpParams['vnp_SecureHash']
+  delete vnpParams['vnp_SecureHashType']
+
+  const sortedParams = Object.keys(vnpParams)
+    .sort()
+    .reduce((acc: Record<string, string>, key) => {
+      acc[key] = vnpParams[key]
+      return acc
+    }, {})
+
+  const signData = new URLSearchParams(sortedParams).toString()
+
+  const expectedHash = crypto
+    .createHmac('sha512', process.env.VNPAY_HASH_SECRET as string)
+    .update(signData)
+    .digest('hex')
+
+  if (secureHash !== expectedHash) {
+    return res.redirect(`${clientUrl}/payment/failed?orderId=${orderId}&reason=invalid_signature`)
+  }
+
+  const responseCode = vnpParams['vnp_ResponseCode']
+
+  // xử lý nghiệp vụ luôn ở đây vì VNPay sandbox không gọi IPN
+  await paymentsService.handleVnpayIpn({ ...vnpParams, vnp_SecureHash: secureHash })
+
+  if (responseCode === '00') {
+    return res.redirect(`${clientUrl}/payment/success?orderId=${orderId}`)
+  }
+
+  return res.redirect(`${clientUrl}/payment/failed?orderId=${orderId}&code=${responseCode}`)
+}
+
+export const vnpayIpnController = async (req: Request, res: Response) => {
+  const result = await paymentsService.handleVnpayIpn(req.query as Record<string, string>)
+  return res.json(result)
 }

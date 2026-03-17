@@ -168,6 +168,113 @@ class PaymentsService {
 
     return { pay_url }
   }
+
+  async handleVnpayIpn(vnpParams: Record<string, string>) {
+    // 1. Lấy secure hash ra khỏi params
+    const secureHash = vnpParams['vnp_SecureHash']
+    const params = { ...vnpParams }
+    delete params['vnp_SecureHash']
+    delete params['vnp_SecureHashType']
+
+    // 2. Xác thực chữ ký
+    const sortedParams = Object.keys(params)
+      .sort()
+      .reduce((acc: Record<string, string>, key) => {
+        acc[key] = params[key]
+        return acc
+      }, {})
+
+    const signData = new URLSearchParams(sortedParams).toString()
+
+    const expectedHash = crypto
+      .createHmac('sha512', process.env.VNPAY_HASH_SECRET as string)
+      .update(signData)
+      .digest('hex')
+
+    if (secureHash !== expectedHash) {
+      return { RspCode: '97', Message: 'Invalid signature' }
+    }
+
+    // 3. Tìm payment theo order_id
+    const orderId = vnpParams['vnp_TxnRef']
+    const existingPayment = await databaseServices.payments.findOne({
+      provider_order_id: orderId
+    })
+
+    if (!existingPayment) {
+      return { RspCode: '01', Message: 'Order not found' }
+    }
+
+    // 4. Kiểm tra idempotent
+    if (existingPayment.status !== PaymentStatus.Pending) {
+      return { RspCode: '02', Message: 'Order already confirmed' }
+    }
+
+    // 5. Kiểm tra số tiền
+    const vnpAmount = Number(vnpParams['vnp_Amount']) / 100 // VNPay nhân 100
+    if (vnpAmount !== existingPayment.amount) {
+      return { RspCode: '04', Message: 'Invalid amount' }
+    }
+
+    // 6. Xử lý theo responseCode
+    const responseCode = vnpParams['vnp_ResponseCode']
+
+    if (responseCode === '00') {
+      // thanh toán thành công
+      await databaseServices.payments.updateOne(
+        { provider_order_id: orderId },
+        {
+          $set: {
+            status: PaymentStatus.Success,
+            transaction_id: vnpParams['vnp_TransactionNo'],
+            raw_response: vnpParams,
+            paid_at: new Date(),
+            updated_at: new Date()
+          }
+        }
+      )
+
+      await databaseServices.bookings.updateOne(
+        { _id: existingPayment.booking_id },
+        {
+          $set: {
+            status: BookingStatus.Confirmed,
+            updated_at: new Date()
+          }
+        }
+      )
+
+      // cập nhật used_count coupon nếu có
+      const booking = await databaseServices.bookings.findOne({
+        _id: existingPayment.booking_id
+      })
+
+      if (booking?.coupon_id) {
+        await databaseServices.coupons.updateOne(
+          { _id: booking.coupon_id },
+          {
+            $inc: { used_count: 1 },
+            $push: { used_by: booking.user_id }
+          }
+        )
+      }
+    } else {
+      // thanh toán thất bại
+      await databaseServices.payments.updateOne(
+        { provider_order_id: orderId },
+        {
+          $set: {
+            status: PaymentStatus.Failed,
+            raw_response: vnpParams,
+            updated_at: new Date()
+          }
+        }
+      )
+    }
+
+    // 7. Trả về đúng format VNPay yêu cầu
+    return { RspCode: '00', Message: 'Confirm Success' }
+  }
 }
 
 const paymentsService = new PaymentsService()
