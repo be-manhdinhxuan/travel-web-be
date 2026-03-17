@@ -57,12 +57,7 @@ authsRouter.post(
  * Method: GET
  * Body: {email_verify_token: string}
  */
-authsRouter.get(
-  '/verify-email',
-  checkAllowedFields(['email_verify_token']),
-  emailVerifyTokenValidator,
-  wrapRequestHandler(verifyEmailController)
-)
+authsRouter.get('/verify-email', emailVerifyTokenValidator, wrapRequestHandler(verifyEmailController))
 
 /**
  * Description: Verify email when user client click on the link in email

@@ -13,8 +13,8 @@ const transporter = nodemailer.createTransport({
   }
 })
 
-const sendVerifyEmail = async (to: string, email_verify_token: string) => {
-  const verifyUrl = `${process.env.CLIENT_URL}/api/auths/verify-email?email_verify_token=${email_verify_token}`
+const sendVerifyEmail = async (to: string, token: string) => {
+  const verifyUrl = `${process.env.CLIENT_URL}/api/auths/verify-email?email_verify_token=${token}`
 
   await transporter.sendMail({
     from: `"Travel Web" <${process.env.MAIL_USER}>`,

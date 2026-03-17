@@ -4,6 +4,7 @@ import { createMomoPaymentUrl } from './momo.sevices'
 import Payment from '~/models/schemas/Payment.schema'
 import { BookingStatus, PaymentProvider, PaymentStatus } from '~/constants/enums'
 import crypto from 'crypto'
+import { createVnpayPaymentUrl } from './vnpay.services'
 
 class PaymentsService {
   async createMomoPayment(booking_id: string, user_id: string) {
@@ -141,6 +142,31 @@ class PaymentsService {
         }
       )
     }
+  }
+
+  async createVnpayPayment(booking_id: string, user_id: string, ip_addr: string) {
+    const booking = await databaseServices.bookings.findOne({
+      _id: new ObjectId(booking_id)
+    })
+
+    const order_id = `${booking_id}-${Date.now()}`
+    const order_info = `Thanh toan ${booking!.tour_snapshot.tour_name} - Ma dat tour: ${booking!.booking_code}`
+    // lưu ý: VNPay không nhận tiếng Việt có dấu trong orderInfo
+
+    const pay_url = createVnpayPaymentUrl(order_id, booking!.final_price, order_info, ip_addr)
+
+    // lưu payment vào DB
+    const payment = new Payment({
+      booking_id: new ObjectId(booking_id),
+      user_id: new ObjectId(user_id),
+      provider: PaymentProvider.VNPay,
+      provider_order_id: order_id,
+      amount: booking!.final_price
+    })
+
+    await databaseServices.payments.insertOne(payment)
+
+    return { pay_url }
   }
 }
 

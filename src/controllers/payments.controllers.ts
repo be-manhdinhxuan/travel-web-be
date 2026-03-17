@@ -20,3 +20,17 @@ export const momoIpnController = async (req: Request, res: Response) => {
   await paymentsService.handleMomoIpn(req.body)
   return res.status(204).send()
 }
+
+export const createVnpayPaymentController = async (
+  req: Request<ParamsDictionary, any, { booking_id: string }>,
+  res: Response
+) => {
+  const user_id = req.decoded_authorization?.user_id as string
+  const { booking_id } = req.body
+  const ip_addr = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
+  const result = await paymentsService.createVnpayPayment(booking_id, user_id, ip_addr)
+  return res.json({
+    message: MESSAGES.CREATE_PAYMENT_SUCCESS,
+    result
+  })
+}
