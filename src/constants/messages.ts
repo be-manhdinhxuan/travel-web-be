@@ -237,5 +237,9 @@ export const MESSAGES = {
   VALIDATE_COUPON_SUCCESS: 'Validate coupon success',
   COUPON_IS_INACTIVE: 'Coupon is inactive',
   COUPON_EXPIRED: 'Coupon is expired',
-  COUPON_MAX_USAGE_REACHED: 'Coupon max usage reached'
+  COUPON_MAX_USAGE_REACHED: 'Coupon max usage reached',
+
+  PERIOD_IS_REQUIRED: 'Period is required',
+  PERIOD_IS_INVALID: 'Period is invalid',
+  GET_STATS_SUCCESS: 'Get stats success'
 } as const
