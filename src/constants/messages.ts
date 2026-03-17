@@ -211,5 +211,19 @@ export const MESSAGES = {
   UPDATE_BOOKING_STATUS_SUCCESS: 'Update booking status success',
   BOOKING_ID_IS_REQUIRED: 'Booking id is required',
   BOOKING_ALREADY_PAID: 'Booking already paid',
-  CREATE_PAYMENT_SUCCESS: 'Create payment success'
+  CREATE_PAYMENT_SUCCESS: 'Create payment success',
+
+  COUPON_CODE_IS_REQUIRED: 'Coupon code is required',
+  COUPON_CODE_LENGTH_INVALID: 'Coupon code length must be from 3 to 20 characters',
+  COUPON_CODE_ALREADY_EXISTS: 'Coupon code already exists',
+  COUPON_VALUE_IS_REQUIRED: 'Coupon value is required',
+  COUPON_VALUE_MUST_BE_A_POSITIVE_INTEGER: 'Coupon value must be a positive integer',
+  COUPON_MIN_ORDER_VALUE_MUST_BE_NON_NEGATIVE: 'Coupon minimum order value must be a non-negative integer',
+  COUPON_MIN_ORDER_VALUE_IS_REQUIRED: 'Coupon minimum order value is required',
+  COUPON_MAX_USAGE_IS_REQUIRED: 'Coupon max usage is required',
+  COUPON_MAX_USAGE_MUST_BE_A_POSITIVE_INTEGER: 'Coupon max usage must be a positive integer',
+  COUPON_EXPIRES_AT_IS_REQUIRED: 'Coupon expires at is required',
+  COUPON_EXPIRES_AT_IS_INVALID: 'Coupon expires at is invalid',
+  COUPON_EXPIRES_AT_MUST_BE_IN_FUTURE: 'Coupon expires at must be in the future',
+  CREATE_COUPON_SUCCESS: 'Create coupon success'
 } as const

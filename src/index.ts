@@ -11,6 +11,7 @@ import schedulesRouter from './routes/schedules.routes'
 import bookingsRouter from './routes/bookings.routes'
 import paymentsRouter from './routes/payments.routes'
 import bookingExpiryJob from './jobs/booking-expiry.job'
+import couponsRouter from './routes/coupons.routes'
 
 config()
 databaseService.connect()
@@ -40,6 +41,9 @@ app.use('/api/bookings', bookingsRouter)
 
 // Payment
 app.use('/api/payments', paymentsRouter)
+
+// Coupon
+app.use('/api/coupons', couponsRouter)
 
 app.use(defaultErrorHandler)
 
