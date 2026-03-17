@@ -5,3 +5,10 @@ export interface CreateCouponReqBody {
   max_usage: number
   expires_at: string
 }
+
+export interface GetCouponsQuery {
+  page?: number
+  limit?: number
+  is_active?: boolean
+  keyword?: string
+}

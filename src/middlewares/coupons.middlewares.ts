@@ -88,3 +88,41 @@ export const createCouponValidator = validate(
     ['body']
   )
 )
+
+export const getCouponsValidator = validate(
+  checkSchema(
+    {
+      page: {
+        optional: true,
+        isInt: {
+          options: { min: 1 },
+          errorMessage: MESSAGES.PAGE_MUST_BE_A_POSITIVE_INTEGER
+        },
+        toInt: true
+      },
+      limit: {
+        optional: true,
+        isInt: {
+          options: { min: 1, max: 100 },
+          errorMessage: MESSAGES.LIMIT_MUST_BE_FROM_1_TO_100
+        },
+        toInt: true
+      },
+      is_active: {
+        optional: true,
+        isBoolean: {
+          errorMessage: MESSAGES.IS_ACTIVE_MUST_BE_A_BOOLEAN
+        },
+        toBoolean: true
+      },
+      keyword: {
+        optional: true,
+        isString: {
+          errorMessage: MESSAGES.KEYWORD_MUST_BE_A_STRING
+        },
+        trim: true
+      }
+    },
+    ['query']
+  )
+)

@@ -37,7 +37,7 @@ export default class Coupon {
     this.used_count = coupon.used_count || 0
     this.used_by = coupon.used_by || []
     this.expires_at = coupon.expires_at
-    this.is_active = coupon.is_active || true
+    this.is_active = coupon.is_active ?? true
     this.created_at = coupon.created_at || date
     this.updated_at = coupon.updated_at || date
   }

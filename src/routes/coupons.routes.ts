@@ -1,9 +1,9 @@
 import e, { Router } from 'express'
 import { UserRole } from '~/constants/enums'
-import { createCouponController } from '~/controllers/coupons.controllers'
+import { createCouponController, getCouponsController } from '~/controllers/coupons.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
-import { createCouponValidator } from '~/middlewares/coupons.middlewares'
+import { createCouponValidator, getCouponsValidator } from '~/middlewares/coupons.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
 
@@ -23,6 +23,22 @@ couponsRouter.post(
   authorize(UserRole.Admin),
   createCouponValidator,
   wrapRequestHandler(createCouponController)
+)
+
+/**
+ * Description: Get all coupons (Admin)
+ * Path: /
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ * Query: { page, limit, is_active, keyword }
+ */
+couponsRouter.get(
+  '/',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize(UserRole.Admin),
+  getCouponsValidator,
+  wrapRequestHandler(getCouponsController)
 )
 
 export default couponsRouter
