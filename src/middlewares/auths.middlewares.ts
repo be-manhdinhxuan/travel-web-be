@@ -8,7 +8,7 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { verifyToken } from '~/utils/jwt'
 import { capitalize } from 'lodash'
 import { JsonWebTokenError } from 'jsonwebtoken'
-import { hashPassword } from '~/utils/crypto'
+import { comparePassword } from '~/utils/crypto'
 import databaseServices from '~/services/database.services'
 import { ObjectId } from 'mongodb'
 import { UserStatus } from '~/constants/enums'
@@ -304,10 +304,13 @@ export const loginValidator = validate(
         custom: {
           options: async (value, { req }) => {
             const user = await databaseServices.users.findOne({
-              email: value,
-              password: hashPassword(req.body.password)
+              email: value
             })
-            if (user === null) {
+            if (!user) {
+              throw new Error(MESSAGES.EMAIL_OR_PASSWORD_INCORRECT)
+            }
+            const isMatch = await comparePassword(req.body.password, user.password)
+            if (!isMatch) {
               throw new Error(MESSAGES.EMAIL_OR_PASSWORD_INCORRECT)
             }
             if (user.status === UserStatus.Banned) {

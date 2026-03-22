@@ -82,7 +82,15 @@ class AuthService {
     })
   }
 
-  private signForgotPasswordToken({ user_id, verify, status }: { user_id: string; verify: UserVerifyStatus; status: UserStatus }) {
+  private signForgotPasswordToken({
+    user_id,
+    verify,
+    status
+  }: {
+    user_id: string
+    verify: UserVerifyStatus
+    status: UserStatus
+  }) {
     return signToken({
       payload: {
         user_id,
@@ -127,7 +135,7 @@ class AuthService {
         full_name: payload.full_name,
         email_verify_token,
         date_of_birth: new Date(payload.date_of_birth),
-        password: hashPassword(payload.password)
+        password: await hashPassword(payload.password)
       })
     )
 
@@ -345,7 +353,7 @@ class AuthService {
       {
         $set: {
           forgot_password_token: '',
-          password: hashPassword(password)
+          password: await hashPassword(password)
         },
         $currentDate: {
           updated_at: true

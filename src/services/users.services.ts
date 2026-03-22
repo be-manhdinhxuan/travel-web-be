@@ -90,14 +90,14 @@ class UsersService {
       })
     }
 
-    if (hashPassword(password) !== user.password) {
+    if ((await hashPassword(password)) !== user.password) {
       throw new ErrorWithStatus({
         message: MESSAGES.PASSWORD_IS_INCORRECT,
         status: HTTP_STATUS.UNAUTHORIZED
       })
     }
 
-    if (hashPassword(new_password) === user.password) {
+    if ((await hashPassword(new_password)) === user.password) {
       throw new ErrorWithStatus({
         message: MESSAGES.NEW_PASSWORD_MUST_BE_DIFFERENT,
         status: HTTP_STATUS.BAD_REQUEST
@@ -108,7 +108,7 @@ class UsersService {
       { _id: new ObjectId(user_id) },
       {
         $set: {
-          password: hashPassword(new_password)
+          password: await hashPassword(new_password)
         },
         $currentDate: {
           updated_at: true
