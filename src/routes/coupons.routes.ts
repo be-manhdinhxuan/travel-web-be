@@ -33,7 +33,7 @@ couponsRouter.post(
   '/',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   createCouponValidator,
   wrapRequestHandler(createCouponController)
 )
@@ -49,7 +49,7 @@ couponsRouter.get(
   '/',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   getCouponsValidator,
   wrapRequestHandler(getCouponsController)
 )
@@ -66,7 +66,7 @@ couponsRouter.put(
   '/:id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   checkAllowedFields(['code', 'value', 'min_order_value', 'max_usage', 'expires_at']),
   updateCouponValidator,
   wrapRequestHandler(updateCouponController)
@@ -83,7 +83,7 @@ couponsRouter.patch(
   '/:id/toggle',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   couponIdValidator,
   wrapRequestHandler(toggleCouponController)
 )

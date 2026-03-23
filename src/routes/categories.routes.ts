@@ -54,7 +54,7 @@ categoriesRouter.post(
   '',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   uploadImage.single('thumbnail'),
   createCategoryValidator,
   wrapRequestHandler(createCategoryController)
@@ -71,7 +71,7 @@ categoriesRouter.put(
   '/:id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   uploadImage.single('thumbnail'),
   updateCategoryValidator,
   wrapRequestHandler(updateCategoryController)
@@ -87,7 +87,7 @@ categoriesRouter.delete(
   '/:id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   deleteCategoryValidator,
   wrapRequestHandler(deleteCategoryController)
 )

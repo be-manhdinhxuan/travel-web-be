@@ -129,7 +129,7 @@ usersRouter.get(
   '',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   wrapRequestHandler(getUsersController)
 )
 
@@ -144,7 +144,7 @@ usersRouter.get(
   '/:user_id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   userIdValidator,
   wrapRequestHandler(getUserDetailController)
 )
@@ -161,7 +161,7 @@ usersRouter.patch(
   '/:id/role',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   updateUserRoleValidator,
   wrapRequestHandler(updateUserRoleController)
 )
@@ -178,7 +178,7 @@ usersRouter.patch(
   '/:id/status',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   updateUserStatusValidator,
   wrapRequestHandler(updateUserStatusController)
 )

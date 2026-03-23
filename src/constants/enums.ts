@@ -9,8 +9,9 @@ export enum UserStatus {
 }
 
 export enum UserRole {
-  User,
-  Admin
+  User, // = 0
+  Admin, // = 1
+  Employee // = 2
 }
 
 export enum TourStatus {

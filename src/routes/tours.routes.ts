@@ -49,7 +49,7 @@ toursRouter.post(
   '',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   uploadImage.array('images', 10),
   createTourValidator,
   wrapRequestHandler(createTourController)
@@ -99,7 +99,7 @@ toursRouter.put(
   '/:id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   uploadImage.array('images', 10),
   updateTourValidator,
   wrapRequestHandler(updateTourController)
@@ -117,7 +117,7 @@ toursRouter.patch(
   '/:id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   updateTourStatusValidator,
   wrapRequestHandler(updateTourStatusController)
 )
@@ -133,7 +133,7 @@ toursRouter.delete(
   '/:id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   deleteTourValidator,
   wrapRequestHandler(deleteTourController)
 )
@@ -156,7 +156,7 @@ toursRouter.post(
   '/:tour_id/schedules',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   createScheduleValidator,
   wrapRequestHandler(createScheduleController)
 )

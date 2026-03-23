@@ -28,7 +28,7 @@ schedulesRouter.put(
   '/:id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   updateScheduleValidator,
   wrapRequestHandler(updateScheduleController)
 )
@@ -44,7 +44,7 @@ schedulesRouter.delete(
   '/:id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   deleteScheduleValidator,
   wrapRequestHandler(deleteScheduleController)
 )

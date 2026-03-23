@@ -24,7 +24,7 @@ statsRouter.get(
   '/overview',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   overviewStatsValidator,
   wrapRequestHandler(getOverviewStatsController)
 )
@@ -40,7 +40,7 @@ statsRouter.get(
   '/revenue',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   revenueStatsValidator,
   wrapRequestHandler(getRevenueStatsController)
 )
@@ -56,7 +56,7 @@ statsRouter.get(
   '/top-tours',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin]),
   topToursStatsValidator,
   wrapRequestHandler(getTopToursStatsController)
 )

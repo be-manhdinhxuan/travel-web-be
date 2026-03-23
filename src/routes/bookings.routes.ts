@@ -107,7 +107,7 @@ bookingsRouter.get(
   '/',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   getBookingsValidator,
   wrapRequestHandler(getBookingsController)
 )
@@ -123,7 +123,7 @@ bookingsRouter.get(
   '/:id',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   getBookingDetailValidator,
   wrapRequestHandler(getBookingDetailController)
 )
@@ -143,7 +143,7 @@ bookingsRouter.patch(
   '/:id/status',
   accessTokenValidator,
   verifiedUserValidator,
-  authorize(UserRole.Admin),
+  authorize([UserRole.Admin, UserRole.Employee]),
   updateBookingStatusValidator,
   wrapRequestHandler(updateBookingStatusController)
 )
