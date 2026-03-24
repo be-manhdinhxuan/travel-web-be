@@ -55,9 +55,12 @@ export const loginController = async (req: Request<ParamsDictionary, any, LoginR
   const user_id = user._id as ObjectId
   const result = await authsService.login({
     user_id: user_id.toString(),
+    email: user.email,
+    name: user.full_name,
     role: user.role,
     verify: user.verify,
-    status: user.status
+    status: user.status,
+    avatar: user.avatar
   })
   return res.json({
     message: MESSAGES.LOGIN_SUCCESS,

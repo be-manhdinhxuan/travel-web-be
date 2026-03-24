@@ -263,14 +263,20 @@ class AuthService {
 
   async login({
     user_id,
+    email,
+    name,
     role,
     verify,
-    status
+    status,
+    avatar
   }: {
     user_id: string
+    email: string
+    name: string
     role: UserRole
     verify: UserVerifyStatus
     status: UserStatus
+    avatar: string
   }) {
     const [access_token, refresh_token] = await this.signAccessAndRefreshToken({
       user_id,
@@ -283,7 +289,16 @@ class AuthService {
     )
     return {
       access_token,
-      refresh_token
+      refresh_token,
+      user: {
+        id: user_id,
+        email,
+        name,
+        role,
+        verify,
+        status,
+        avatar
+      }
     }
   }
 
