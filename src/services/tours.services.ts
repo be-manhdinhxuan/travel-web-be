@@ -4,7 +4,7 @@ import Tour from '~/models/schemas/Tour.schema'
 import { generateUniqueCategorySlug } from '~/utils/generateCategorySlug'
 import { uploadImageToCloudinary } from '~/utils/uploadImageToCloudinary'
 import databaseServices from './database.services'
-import { ScheduleStatus, TourStatus, UserRole } from '~/constants/enums'
+import { ScheduleStatus, TourSort, TourStatus, UserRole } from '~/constants/enums'
 import Schedule from '~/models/schemas/Schedule.schema'
 import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
@@ -56,17 +56,46 @@ class ToursService {
     const limit = Number(query.limit) || 12
     const skip = (page - 1) * limit
 
-    const keyword = query.keyword
+    const keyword = query.keyword?.trim()
     const category_id = query.category_id
-    const destination = query.destination
+    const destination = query.destination?.trim()
     const departure_date = query.departure_date
     const num_adults = query.num_adults ? Number(query.num_adults) : undefined
     const num_children = query.num_children ? Number(query.num_children) : undefined
     const min_price = query.min_price ? Number(query.min_price) : undefined
     const max_price = query.max_price ? Number(query.max_price) : undefined
-    const sort = query.sort
+    const duration = query.duration?.trim()?.toLowerCase()
+    let sort = (query.sort?.trim() || 'newest').toLowerCase()
 
-    // tìm schedule_id thỏa điều kiện
+    // ====================== TOUR FILTER (chính) ======================
+    const tourFilter: Filter<Tour> = {
+      status: TourStatus.Active
+    }
+
+    // ==================== DURATION FILTER (đặt sớm) ====================
+    if (duration) {
+      if (duration === '1-2') {
+        tourFilter.duration_days = { $gte: 1, $lte: 2 }
+      } else if (duration === '3-5') {
+        tourFilter.duration_days = { $gte: 3, $lte: 5 }
+      } else if (duration === '6+') {
+        tourFilter.duration_days = { $gte: 6 }
+      }
+    }
+
+    if (keyword) {
+      tourFilter.$text = { $search: keyword }
+    }
+
+    if (category_id) {
+      tourFilter.category_id = new ObjectId(category_id)
+    }
+
+    if (destination) {
+      tourFilter.destination = { $regex: destination, $options: 'i' }
+    }
+
+    // ====================== SCHEDULE FILTER ======================
     const scheduleFilter: Filter<Schedule> = {
       status: ScheduleStatus.Available,
       departure_date: { $gte: new Date() },
@@ -87,8 +116,8 @@ class ToursService {
 
     if (min_price || max_price) {
       scheduleFilter.price_adult = {}
-      if (min_price) scheduleFilter.price_adult.$gte = min_price
-      if (max_price) scheduleFilter.price_adult.$lte = max_price
+      if (min_price !== undefined) scheduleFilter.price_adult.$gte = min_price
+      if (max_price !== undefined) scheduleFilter.price_adult.$lte = max_price
     }
 
     const validSchedules = await databaseServices.schedules
@@ -97,33 +126,48 @@ class ToursService {
 
     const validTourIds = [...new Set(validSchedules.map((s) => s.tour_id.toString()))].map((id) => new ObjectId(id))
 
-    //  filter tours
-    const tourFilter: Filter<Tour> = {
-      status: TourStatus.Active,
-      _id: { $in: validTourIds }
-    }
-
-    if (keyword) {
-      tourFilter.$text = { $search: keyword }
-    }
-
-    if (category_id) {
-      tourFilter.category_id = new ObjectId(category_id)
-    }
-
-    if (destination) {
-      tourFilter.destination = { $regex: destination, $options: 'i' }
-    }
-
-    //  filter tours
-    const sortOption: Document = {}
-    if (sort === 'newest') {
-      sortOption.created_at = -1
+    // Kết hợp filter tour_id từ schedule (nếu có)
+    if (validTourIds.length > 0) {
+      tourFilter._id = { $in: validTourIds }
     } else {
-      sortOption.created_at = -1 // default
+      return { tours: [], pagination: { page, limit, total: 0, total_pages: 0 } }
     }
 
-    //  query
+    // ====================== SORT ======================
+    const sortOption: Document = {}
+
+    switch (sort) {
+      case TourSort.NAME_ASC:
+        sortOption.name = 1
+        sortOption.created_at = -1
+        break
+      case TourSort.NAME_DESC:
+        sortOption.name = -1
+        sortOption.created_at = -1
+        break
+      case TourSort.DURATION_ASC:
+        sortOption.duration_days = 1
+        sortOption.created_at = -1
+        break
+      case TourSort.DURATION_DESC:
+        sortOption.duration_days = -1
+        sortOption.created_at = -1
+        break
+      case TourSort.PRICE_ASC:
+        sortOption.price_adult = 1
+        sortOption.created_at = -1
+        break
+      case TourSort.PRICE_DESC:
+        sortOption.price_adult = -1
+        sortOption.created_at = -1
+        break
+      case TourSort.NEWEST:
+      default:
+        sortOption.created_at = -1
+        break
+    }
+
+    // ====================== QUERY ======================
     const [tours, total] = await Promise.all([
       databaseServices.tours.find(tourFilter).sort(sortOption).skip(skip).limit(limit).toArray(),
       databaseServices.tours.countDocuments(tourFilter)

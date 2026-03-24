@@ -7,7 +7,7 @@ import { ItineraryDayType } from '~/models/schemas/Tour.schema'
 import databaseServices from '~/services/database.services'
 import { validate } from '~/utils/validation'
 import { Request } from 'express'
-import { TourStatus } from '~/constants/enums'
+import { TourSort, TourStatus } from '~/constants/enums'
 
 export const idTourValidator: ParamSchema = {
   notEmpty: {
@@ -306,9 +306,26 @@ export const getToursValidator = validate(
       },
       sort: {
         optional: true,
-        isIn: {
-          options: [['price_asc', 'price_desc', 'newest']],
-          errorMessage: MESSAGES.SORT_IS_INVALID
+        trim: true,
+        customSanitizer: {
+          options: (value: any) => (typeof value === 'string' ? value.trim().toLowerCase() : value)
+        },
+        custom: {
+          options: (value: string) => {
+            const allowed = [
+              'newest',
+              'name_asc',
+              'name_desc',
+              'duration_asc',
+              'duration_desc',
+              'price_asc',
+              'price_desc'
+            ]
+            if (!allowed.includes(value)) {
+              throw new Error(MESSAGES.SORT_IS_INVALID)
+            }
+            return true
+          }
         }
       }
     },

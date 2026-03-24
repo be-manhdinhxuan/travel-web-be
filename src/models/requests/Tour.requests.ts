@@ -32,6 +32,7 @@ export interface GetToursQuery {
   num_children?: number
   min_price?: number
   max_price?: number
+  duration?: string
   sort?: 'price_asc' | 'price_desc' | 'newest'
 }
 

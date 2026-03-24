@@ -1,11 +1,11 @@
 export enum UserVerifyStatus {
   Unverified, // = 0
-  Verified    // = 1
+  Verified // = 1
 }
 
 export enum UserStatus {
   Active, // = 0
-  Banned  // = 1
+  Banned // = 1
 }
 
 export enum UserRole {
@@ -50,4 +50,14 @@ export enum TokenType {
   RefreshToken,
   ForgotPasswordToken,
   EmailVerifyToken
+}
+
+export enum TourSort {
+  NEWEST = 'newest',
+  NAME_ASC = 'name_asc',
+  NAME_DESC = 'name_desc',
+  DURATION_ASC = 'duration_asc',
+  DURATION_DESC = 'duration_desc',
+  PRICE_ASC = 'price_asc',
+  PRICE_DESC = 'price_desc'
 }
