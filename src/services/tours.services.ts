@@ -52,21 +52,19 @@ class ToursService {
   }
 
   async getTours(query: GetToursQuery) {
-    const {
-      page = 1,
-      limit = 12,
-      keyword,
-      category_id,
-      destination,
-      departure_date,
-      num_adults,
-      num_children,
-      min_price,
-      max_price,
-      sort
-    } = query
-
+    const page = Number(query.page) || 1
+    const limit = Number(query.limit) || 12
     const skip = (page - 1) * limit
+
+    const keyword = query.keyword
+    const category_id = query.category_id
+    const destination = query.destination
+    const departure_date = query.departure_date
+    const num_adults = query.num_adults ? Number(query.num_adults) : undefined
+    const num_children = query.num_children ? Number(query.num_children) : undefined
+    const min_price = query.min_price ? Number(query.min_price) : undefined
+    const max_price = query.max_price ? Number(query.max_price) : undefined
+    const sort = query.sort
 
     // tìm schedule_id thỏa điều kiện
     const scheduleFilter: Filter<Schedule> = {
