@@ -6,7 +6,7 @@ import streamifier from 'streamifier'
 import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
-import { hashPassword } from '~/utils/crypto'
+import { comparePassword, hashPassword } from '~/utils/crypto'
 
 class UsersService {
   async getMe(user_id: string) {
@@ -90,14 +90,18 @@ class UsersService {
       })
     }
 
-    if ((await hashPassword(password)) !== user.password) {
+    const isMatch = await comparePassword(password, user.password)
+
+    if (!isMatch) {
       throw new ErrorWithStatus({
         message: MESSAGES.PASSWORD_IS_INCORRECT,
         status: HTTP_STATUS.UNAUTHORIZED
       })
     }
 
-    if ((await hashPassword(new_password)) === user.password) {
+    const isSamePassword = await comparePassword(new_password, user.password)
+
+    if (isSamePassword) {
       throw new ErrorWithStatus({
         message: MESSAGES.NEW_PASSWORD_MUST_BE_DIFFERENT,
         status: HTTP_STATUS.BAD_REQUEST
