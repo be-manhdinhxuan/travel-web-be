@@ -173,8 +173,28 @@ class ToursService {
       databaseServices.tours.countDocuments(tourFilter)
     ])
 
+    const toursWithPrice = await Promise.all(
+      tours.map(async (tour) => {
+        const schedules = await databaseServices.schedules
+          .find({
+            tour_id: tour._id,
+            status: { $in: [ScheduleStatus.Available, ScheduleStatus.Full] },
+            departure_date: { $gte: new Date() }
+          })
+          .sort({ price_adult: 1 }) // rẻ nhất lên đầu
+          .toArray()
+
+        const price = schedules.length > 0 ? schedules[0].price_adult : null
+
+        return {
+          ...tour,
+          price
+        }
+      })
+    )
+
     return {
-      tours,
+      tours: toursWithPrice,
       pagination: {
         page,
         limit,
@@ -200,7 +220,19 @@ class ToursService {
       })
     }
 
-    return tour
+    const schedules = await databaseServices.schedules
+      .find({
+        tour_id: tour._id,
+        status: { $in: [ScheduleStatus.Available, ScheduleStatus.Full] },
+        departure_date: { $gte: new Date() }
+      })
+      .sort({ price_adult: 1 })
+      .toArray()
+
+    // lấy giá rẻ nhất từ schedule có giá người lớn thấp nhất
+    const min_price = schedules.length > 0 ? schedules[0].price_adult : null
+
+    return { tour, schedules, min_price }
   }
 
   async updateTour(id: string, payload: UpdateTourReqBody, files: Express.Multer.File[] | undefined) {
