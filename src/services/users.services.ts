@@ -129,8 +129,11 @@ class UsersService {
   }
 
   async toggleWishlist(user_id: string, tour_id: string) {
+    const userObjectId = new ObjectId(user_id)
+    const tourObjectId = new ObjectId(tour_id)
+
     const user = await databaseServices.users.findOne({
-      _id: new ObjectId(user_id)
+      _id: userObjectId
     })
 
     if (!user) {
@@ -140,28 +143,30 @@ class UsersService {
       })
     }
 
-    const tourObjectId = new ObjectId(tour_id)
+    // ✅ check tồn tại (an toàn mọi kiểu dữ liệu)
+    const exists = (user.wishlist || []).some((id: any) => id.toString() === tour_id)
 
     let updatedUser
 
-    if (user.wishlist?.some((id) => id.equals(tourObjectId))) {
-      // remove
+    if (exists) {
+      // ❌ REMOVE
       updatedUser = await databaseServices.users.findOneAndUpdate(
-        { _id: new ObjectId(user_id) },
+        { _id: userObjectId },
         { $pull: { wishlist: tourObjectId } },
         { returnDocument: 'after', projection: { wishlist: 1 } }
       )
     } else {
-      // add
+      // ✅ ADD
       updatedUser = await databaseServices.users.findOneAndUpdate(
-        { _id: new ObjectId(user_id) },
+        { _id: userObjectId },
         { $addToSet: { wishlist: tourObjectId } },
         { returnDocument: 'after', projection: { wishlist: 1 } }
       )
     }
 
     return {
-      wishlist: updatedUser?.wishlist
+      added: !exists, // 🔥 FE dùng để đổi màu
+      wishlist: updatedUser?.wishlist || []
     }
   }
 
