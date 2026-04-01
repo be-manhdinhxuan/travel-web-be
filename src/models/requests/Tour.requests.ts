@@ -27,7 +27,8 @@ export interface GetToursQuery {
   keyword?: string
   category_id?: string
   destination?: string
-  departure_date?: string
+  departure_from?: string
+  departure_to?: string
   num_adults?: number
   num_children?: number
   min_price?: number
