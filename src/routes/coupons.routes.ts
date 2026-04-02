@@ -1,8 +1,9 @@
-import e, { Router } from 'express'
+import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
 import {
   createCouponController,
   getCouponsController,
+  getPublicCouponsController,
   toggleCouponController,
   updateCouponController,
   validateCouponController
@@ -21,6 +22,13 @@ import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
 
 const couponsRouter = Router()
+
+/**
+ * Description: Get public coupons (available coupons for users)
+ * Path: /public-coupons
+ * Method: GET
+ */
+couponsRouter.get('/public-coupons', wrapRequestHandler(getPublicCouponsController))
 
 /**
  * Description: Create coupon (Admin only)

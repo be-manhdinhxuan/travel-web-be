@@ -1,8 +1,21 @@
 import { Request, Response } from 'express'
-import { CreateCouponReqBody, GetCouponsQuery, UpdateCouponReqBody, ValidateCouponReqBody } from '~/models/requests/Coupon.requests'
+import {
+  CreateCouponReqBody,
+  GetCouponsQuery,
+  UpdateCouponReqBody,
+  ValidateCouponReqBody
+} from '~/models/requests/Coupon.requests'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { MESSAGES } from '~/constants/messages'
 import couponsService from '~/services/coupons.services'
+
+export const getPublicCouponsController = async (req: Request, res: Response) => {
+  const result = await couponsService.getPublicCoupons()
+  return res.json({
+    message: MESSAGES.GET_COUPONS_SUCCESS,
+    result
+  })
+}
 
 export const createCouponController = async (
   req: Request<ParamsDictionary, any, CreateCouponReqBody>,

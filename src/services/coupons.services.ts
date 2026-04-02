@@ -11,6 +11,29 @@ import { Request } from 'express'
 import { MESSAGES } from '~/constants/messages'
 
 class CouponsService {
+  async getPublicCoupons() {
+    const coupons = await databaseServices.coupons
+      .find(
+        {
+          is_active: true,
+          expires_at: { $gte: new Date() },
+          $expr: { $lt: ['$used_count', '$max_usage'] }
+        },
+        {
+          projection: {
+            code: 1,
+            value: 1,
+            min_order_value: 1,
+            expires_at: 1
+          }
+        }
+      )
+      .sort({ created_at: -1 })
+      .toArray()
+
+    return { coupons }
+  }
+
   async createCoupon(payload: CreateCouponReqBody) {
     const coupon = new Coupon({
       code: payload.code.toUpperCase(),
