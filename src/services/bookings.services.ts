@@ -152,7 +152,7 @@ class BookingServices {
     const limit = Number(query.limit) || 10
     const skip = (page - 1) * limit
 
-    const filter: Filter<Booking> = {
+    const filter: Record<string, unknown> = {
       user_id: new ObjectId(user_id)
     }
 
@@ -161,7 +161,31 @@ class BookingServices {
     }
 
     const [bookings, total] = await Promise.all([
-      databaseServices.bookings.find(filter).sort({ created_at: -1 }).skip(skip).limit(limit).toArray(),
+      databaseServices.bookings
+        .aggregate([
+          { $match: filter },
+          { $sort: { created_at: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $lookup: {
+              from: 'tours',
+              localField: 'tour_snapshot.tour_id',
+              foreignField: '_id',
+              as: 'tour_info'
+            }
+          },
+          {
+            $addFields: {
+              'tour_snapshot.images': { $arrayElemAt: ['$tour_info.images', 0] },
+              'tour_snapshot.destination': { $arrayElemAt: ['$tour_info.destination', 0] },
+              'tour_snapshot.duration_days': { $arrayElemAt: ['$tour_info.duration_days', 0] },
+              'tour_snapshot.duration_nights': { $arrayElemAt: ['$tour_info.duration_nights', 0] }
+            }
+          },
+          { $project: { tour_info: 0 } }
+        ])
+        .toArray(),
       databaseServices.bookings.countDocuments(filter)
     ])
 
