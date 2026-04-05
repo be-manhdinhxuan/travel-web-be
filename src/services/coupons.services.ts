@@ -9,6 +9,7 @@ import databaseServices from './database.services'
 import { Filter, ObjectId } from 'mongodb'
 import { Request } from 'express'
 import { MESSAGES } from '~/constants/messages'
+import { BookingStatus } from '~/constants/enums'
 
 class CouponsService {
   async getPublicCoupons() {
@@ -203,6 +204,38 @@ class CouponsService {
       final_price,
       coupon
     }
+  }
+
+  async applyBookingCoupon(booking_id: string, user_id: string, coupon_code: string) {
+    const booking = await databaseServices.bookings.findOne({
+      _id: new ObjectId(booking_id),
+      user_id: new ObjectId(user_id),
+      status: BookingStatus.Pending
+    })
+
+    // validate coupon
+    const coupon = await databaseServices.coupons.findOne({
+      code: coupon_code.toUpperCase(),
+      is_active: true,
+      expires_at: { $gte: new Date() },
+      $expr: { $lt: ['$used_count', '$max_usage'] }
+    })
+
+    const discount_amount = Math.min(coupon!.value, booking!.total_price)
+    const final_price = booking!.total_price - discount_amount
+
+    await databaseServices.bookings.updateOne(
+      { _id: new ObjectId(booking_id) },
+      {
+        $set: {
+          coupon_id: coupon!._id,
+          'price_detail.discount_amount': discount_amount,
+          'price_detail.coupon_code': coupon_code.toUpperCase(),
+          final_price,
+          updated_at: new Date()
+        }
+      }
+    )
   }
 }
 

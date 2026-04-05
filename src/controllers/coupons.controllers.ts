@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import {
+  ApplyBookingCouponReqBody,
   CreateCouponReqBody,
   GetCouponsQuery,
   UpdateCouponReqBody,
@@ -68,6 +69,19 @@ export const validateCouponController = async (
   const result = await couponsService.validateCoupon(req.body, user_id)
   return res.json({
     message: MESSAGES.VALIDATE_COUPON_SUCCESS,
+    result
+  })
+}
+
+export const applyBookingCouponController = async (
+  req: Request<ParamsDictionary, any, ApplyBookingCouponReqBody>,
+  res: Response
+) => {
+  const user_id = req.decoded_authorization?.user_id as string
+  const { booking_id, coupon_code } = req.body
+  const result = await couponsService.applyBookingCoupon(booking_id, user_id, coupon_code)
+  return res.json({
+    message: MESSAGES.APPLY_BOOKING_COUPON_SUCCESS,
     result
   })
 }

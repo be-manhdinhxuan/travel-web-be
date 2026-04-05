@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
 import {
+  applyBookingCouponController,
   createCouponController,
   getCouponsController,
   getPublicCouponsController,
@@ -109,6 +110,20 @@ couponsRouter.post(
   verifiedUserValidator,
   validateCouponValidator,
   wrapRequestHandler(validateCouponController)
+)
+
+/**
+ * Description: Update coupon for bookings
+ * Path: /:id/coupon
+ * Method: PATCH
+ * Header: { Authorization: Bearer <access_token> }
+ * Body: { booking_id (string, required), user_id (string, required), coupon_code (string, required) }
+ */
+couponsRouter.patch(
+  '/:id/coupon',
+  accessTokenValidator,
+  verifiedUserValidator,
+  wrapRequestHandler(applyBookingCouponController)
 )
 
 export default couponsRouter

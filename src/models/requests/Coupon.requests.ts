@@ -25,3 +25,9 @@ export interface ValidateCouponReqBody {
   code: string
   order_value: number
 }
+
+export interface ApplyBookingCouponReqBody {
+  booking_id: string
+  user_id: string
+  coupon_code: string
+}

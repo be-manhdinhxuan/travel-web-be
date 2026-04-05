@@ -193,6 +193,7 @@ export const MESSAGES = {
   COUPON_INVALID: 'Coupon code is invalid',
   COUPON_MIN_ORDER_NOT_MET: 'Coupon minimum order value not met',
   COUPON_ALREADY_USED: 'Coupon code has already been used by this user',
+  APPLY_BOOKING_COUPON_SUCCESS: 'Apply booking coupon success',
   BOOKING_STATUS_IS_INVALID: 'Booking status is invalid',
   GET_MY_BOOKINGS_SUCCESS: 'Get my bookings success',
   BOOKING_ID_IS_INVALID: 'Booking id is invalid',
