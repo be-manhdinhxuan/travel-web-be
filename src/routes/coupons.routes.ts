@@ -64,7 +64,7 @@ couponsRouter.get(
 )
 
 /**
- * Description: Update coupon
+ * Description: Update coupon (Admin only)
  * Path: /:id
  * Method: PUT
  * Header: { Authorization: Bearer <access_token> }
@@ -82,7 +82,7 @@ couponsRouter.put(
 )
 
 /**
- * Description: Toggle coupon status
+ * Description: Toggle coupon status (Admin only)
  * Path: /:id/toggle
  * Method: PATCH
  * Header: { Authorization: Bearer <access_token> }

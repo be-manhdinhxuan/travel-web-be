@@ -166,6 +166,8 @@ class BookingServices {
           { $sort: { created_at: -1 } },
           { $skip: skip },
           { $limit: limit },
+
+          // 🔥 JOIN TOUR (giữ nguyên)
           {
             $lookup: {
               from: 'tours',
@@ -182,6 +184,37 @@ class BookingServices {
               'tour_snapshot.duration_nights': { $arrayElemAt: ['$tour_info.duration_nights', 0] }
             }
           },
+
+          // 🔥 ADD: JOIN PAYMENT
+          {
+            $lookup: {
+              from: 'payments',
+              let: { bookingId: '$_id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: { $eq: ['$booking_id', '$$bookingId'] }
+                  }
+                },
+                { $sort: { created_at: -1 } },
+                { $limit: 1 },
+                {
+                  $project: {
+                    provider: 1,
+                    status: 1
+                  }
+                }
+              ],
+              as: 'payment'
+            }
+          },
+          {
+            $unwind: {
+              path: '$payment',
+              preserveNullAndEmptyArrays: true
+            }
+          },
+
           { $project: { tour_info: 0 } }
         ])
         .toArray(),
@@ -199,11 +232,43 @@ class BookingServices {
     }
   }
 
-  async getMyBookingDetail(id: string) {
-    const booking = await databaseServices.bookings.findOne({
-      _id: new ObjectId(id)
-    })
-    return { booking }
+  async getMyBookingDetail(user_id: string, id: string) {
+    const result = await databaseServices.bookings
+      .aggregate([
+        {
+          $match: {
+            _id: new ObjectId(id),
+            user_id: new ObjectId(user_id)
+          }
+        },
+
+        // JOIN PAYMENT
+        {
+          $lookup: {
+            from: 'payments',
+            let: { bookingId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$booking_id', '$$bookingId'] }
+                }
+              },
+              { $sort: { created_at: -1 } },
+              { $limit: 1 }
+            ],
+            as: 'payment'
+          }
+        },
+        {
+          $unwind: {
+            path: '$payment',
+            preserveNullAndEmptyArrays: true
+          }
+        }
+      ])
+      .toArray()
+
+    return { booking: result[0] }
   }
 
   async cancelBooking(id: string, reason?: string) {

@@ -35,7 +35,8 @@ export const getMyBookingsController = async (
 
 export const getMyBookingDetailController = async (req: Request, res: Response) => {
   const { id } = req.params
-  const result = await bookingsService.getMyBookingDetail(id as string)
+  const user_id = req.decoded_authorization?.user_id as string
+  const result = await bookingsService.getMyBookingDetail(user_id, id as string)
   return res.json({
     message: MESSAGES.GET_BOOKING_DETAIL_SUCCESS,
     result
