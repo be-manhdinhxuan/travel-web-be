@@ -6,10 +6,10 @@ interface PaymentType {
   booking_id: ObjectId
   user_id: ObjectId
   provider: PaymentProvider
-  transaction_id?: string
+  transaction_id?: string | null
   provider_order_id: string
   amount: number
-  status?: PaymentStatus
+  status: PaymentStatus
   raw_response?: Record<string, unknown> // Lưu toàn bộ payload từ MoMo/VNPay để đối soát khi cần
   paid_at?: Date | null
   created_at?: Date
@@ -21,7 +21,7 @@ export default class Payment {
   booking_id: ObjectId
   user_id: ObjectId
   provider: PaymentProvider
-  transaction_id: string
+  transaction_id: string | null
   provider_order_id: string
   amount: number
   status: PaymentStatus
@@ -35,7 +35,7 @@ export default class Payment {
     this.booking_id = payment.booking_id
     this.user_id = payment.user_id
     this.provider = payment.provider
-    this.transaction_id = payment.transaction_id || ''
+    this.transaction_id = payment.transaction_id || null
     this.provider_order_id = payment.provider_order_id
     this.amount = payment.amount
     this.status = payment.status || PaymentStatus.Pending

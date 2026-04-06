@@ -21,10 +21,60 @@ class DatabaseService {
     this.db = this.client.db(process.env.DB_NAME)
   }
 
+  async indexCollections() {
+    // users
+    await this.users.createIndex({ email: 1 }, { unique: true })
+    await this.users.createIndex({ status: 1 })
+
+    // refresh_tokens
+    await this.refreshTokens.createIndex({ token: 1 }, { unique: true })
+    await this.refreshTokens.createIndex({ user_id: 1 })
+    await this.refreshTokens.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 }) // TTL
+
+    // categories
+    await this.categories.createIndex({ slug: 1 }, { unique: true })
+    await this.categories.createIndex({ is_active: 1 })
+
+    // tours
+    await this.tours.createIndex({ slug: 1 }, { unique: true })
+    await this.tours.createIndex({ category_id: 1 })
+    await this.tours.createIndex({ destination: 1 })
+    await this.tours.createIndex({ status: 1 })
+    await this.tours.createIndex({ name: 'text', description: 'text' }) // full-text search
+
+    // schedules
+    await this.schedules.createIndex({ tour_id: 1 })
+    await this.schedules.createIndex({ departure_date: 1 })
+    await this.schedules.createIndex({ status: 1 })
+    await this.schedules.createIndex({ available_slots: 1 })
+
+    // bookings
+    await this.bookings.createIndex({ booking_code: 1 }, { unique: true })
+    await this.bookings.createIndex({ user_id: 1 })
+    await this.bookings.createIndex({ schedule_id: 1 })
+    await this.bookings.createIndex({ status: 1 })
+    await this.bookings.createIndex({ created_at: 1 })
+
+    // payments
+    await this.payments.createIndex({ booking_id: 1 })
+    await this.payments.createIndex({ booking_id: 1, created_at: -1 })
+    await this.payments.createIndex({ provider_order_id: 1 }, { unique: true })
+    await this.payments.createIndex({ user_id: 1 })
+    await this.payments.createIndex({ status: 1 })
+
+    // coupons
+    await this.coupons.createIndex({ code: 1 }, { unique: true })
+    await this.coupons.createIndex({ is_active: 1 })
+    await this.coupons.createIndex({ expires_at: 1 })
+
+    console.log('Indexes created successfully')
+  }
+
   async connect() {
     try {
       await this.db.command({ ping: 1 })
       console.log('Pinged your deployment, You successfully connected to MongoDB!')
+      await this.indexCollections()
     } catch (error) {
       console.log('Error', error)
       throw error
