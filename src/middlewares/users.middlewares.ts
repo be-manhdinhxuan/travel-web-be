@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import { UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
-import { REGEX_PHONE } from '~/constants/regex'
+import { FULLNAME_REGEX, REGEX_PHONE } from '~/constants/regex'
 import { ErrorWithStatus } from '~/models/Errors'
 import { TokenPayload } from '~/models/requests/Auth.requests'
 import databaseServices from '~/services/database.services'
@@ -12,6 +12,7 @@ import databaseService from '~/services/database.services'
 import { validate } from '~/utils/validation'
 
 const fullnameSchema: ParamSchema = {
+  trim: true,
   notEmpty: {
     errorMessage: MESSAGES.NAME_IS_REQUIRED
   },
@@ -20,12 +21,15 @@ const fullnameSchema: ParamSchema = {
   },
   isLength: {
     options: {
-      min: 1,
+      min: 2,
       max: 100
     },
-    errorMessage: MESSAGES.NAME_LENGTH_MUST_BE_FROM_1_TO_100
+    errorMessage: MESSAGES.NAME_LENGTH_MUST_BE_FROM_2_TO_100
   },
-  trim: true
+  matches: {
+    options: FULLNAME_REGEX,
+    errorMessage: MESSAGES.NAME_CAN_ONLY_CONTAIN_LETTERS_AND_SPACES
+  }
 }
 
 const dateOfBirthSchema: ParamSchema = {
@@ -145,7 +149,7 @@ export const verifiedUserValidator = (req: Request, res: Response, next: NextFun
 export const updateMeValidator = validate(
   checkSchema(
     {
-      full_name: { ...fullnameSchema, optional: true, notEmpty: undefined },
+      full_name: { ...fullnameSchema, optional: true },
       date_of_birth: { ...dateOfBirthSchema, optional: true },
       phone: {
         optional: true,
@@ -160,7 +164,7 @@ export const updateMeValidator = validate(
             }
             const user = await databaseService.users.findOne({ phone: value })
             if (user) {
-              throw Error(MESSAGES.PHONE_EXISTED)
+              throw Error(MESSAGES.PHONE_IS_INVALID_OR_EXISTED)
             }
           }
         }
@@ -173,10 +177,10 @@ export const updateMeValidator = validate(
         trim: true,
         isLength: {
           options: {
-            min: 1,
+            min: 5,
             max: 300
           },
-          errorMessage: MESSAGES.ADDRESS_LENGTH_MUST_BE_FROM_1_TO_300
+          errorMessage: MESSAGES.ADDRESS_LENGTH_MUST_BE_FROM_5_TO_300
         }
       }
     },

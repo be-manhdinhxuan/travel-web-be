@@ -3,7 +3,8 @@ export const MESSAGES = {
 
   NAME_IS_REQUIRED: 'Name is required',
   NAME_MUST_BE_A_STRING: 'Name must be a string',
-  NAME_LENGTH_MUST_BE_FROM_1_TO_100: 'Name length must be from 1 to 100',
+  NAME_LENGTH_MUST_BE_FROM_2_TO_100: 'Name length must be from 2 to 100',
+  NAME_CAN_ONLY_CONTAIN_LETTERS_AND_SPACES: 'Name can only contain letters and spaces',
 
   EMAIL_ALREADY_EXISTS: 'Email đã tồn tại',
   EMAIL_IS_REQUIRED: 'Email là bắt buộc',
@@ -58,9 +59,9 @@ export const MESSAGES = {
 
   PHONE_MUST_BE_STRING: 'Phone must be string',
   PHONE_IS_INVALID: 'Phone is invalid',
-  PHONE_EXISTED: 'Phone existed',
+  PHONE_IS_INVALID_OR_EXISTED: 'Phone is invalid or existed',
   ADDRESS_MUST_BE_STRING: 'Address must be string',
-  ADDRESS_LENGTH_MUST_BE_FROM_1_TO_300: 'Address length must be from 1 to 300',
+  ADDRESS_LENGTH_MUST_BE_FROM_5_TO_300: 'Address length must be from 5 to 300',
 
   TOUR_ID_IS_REQUIRED: 'Tour id is required',
   TOUR_ID_IS_INVALID: 'Tour id is invalid',
