@@ -36,7 +36,6 @@ const bookingsRouter = Router()
  *   passengers.children (int, default 0)
  *   passengers.babies (int, default 0)
  *   coupon_code (string) — tùy chọn
- *   payment_method (int, required) — 1: momo, 2: vnpay
  *   contact_info.full_name (string, required)
  *   contact_info.phone (string, required)
  *   contact_info.email (string, required)

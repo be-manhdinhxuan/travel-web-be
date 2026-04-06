@@ -39,6 +39,7 @@ export const createVnpayPaymentController = async (
 export const vnpayReturnController = async (req: Request, res: Response) => {
   const vnpParams = { ...req.query } as Record<string, string>
   const clientUrl = process.env.CLIENT_URL
+  const resultPath = process.env.CLIENT_PAYMENT_RESULT_PATH
   const orderId = vnpParams['vnp_TxnRef']
 
   // xác thực chữ ký
@@ -61,7 +62,9 @@ export const vnpayReturnController = async (req: Request, res: Response) => {
     .digest('hex')
 
   if (secureHash !== expectedHash) {
-    return res.redirect(`${clientUrl}/payment/failed?orderId=${orderId}&reason=invalid_signature`)
+    return res.redirect(
+      `${clientUrl}${resultPath}?status=failed&orderId=${encodeURIComponent(orderId)}&reason=invalid_signature`
+    )
   }
 
   const responseCode = vnpParams['vnp_ResponseCode']
@@ -70,10 +73,12 @@ export const vnpayReturnController = async (req: Request, res: Response) => {
   await paymentsService.handleVnpayIpn({ ...vnpParams, vnp_SecureHash: secureHash })
 
   if (responseCode === '00') {
-    return res.redirect(`${clientUrl}/payment/success?orderId=${orderId}`)
+    return res.redirect(`${clientUrl}${resultPath}?status=success&orderId=${encodeURIComponent(orderId)}`)
   }
 
-  return res.redirect(`${clientUrl}/payment/failed?orderId=${orderId}&code=${responseCode}`)
+  return res.redirect(
+    `${clientUrl}${resultPath}?status=failed&orderId=${encodeURIComponent(orderId)}&code=${responseCode}`
+  )
 }
 
 export const vnpayIpnController = async (req: Request, res: Response) => {

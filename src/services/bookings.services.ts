@@ -15,7 +15,7 @@ import { BookingStatus } from '~/constants/enums'
 
 class BookingServices {
   async createBooking(user_id: string, payload: CreateBookingReqBody) {
-    const { schedule_id, passengers, coupon_code, payment_method, contact_info } = payload
+    const { schedule_id, passengers, coupon_code, contact_info } = payload
 
     // Lấy schedule và tour
     const schedule = await databaseServices.schedules.findOne({
@@ -137,8 +137,7 @@ class BookingServices {
         coupon_code: coupon_code_used
       },
       total_price,
-      final_price,
-      payment_method
+      final_price
     })
 
     const result = await databaseServices.bookings.insertOne(booking)

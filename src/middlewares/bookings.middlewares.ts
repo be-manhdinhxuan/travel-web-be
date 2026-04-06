@@ -69,16 +69,6 @@ export const createBookingValidator = validate(
         trim: true,
         toUpperCase: true
       },
-      payment_method: {
-        notEmpty: {
-          errorMessage: MESSAGES.PAYMENT_METHOD_IS_REQUIRED
-        },
-        isIn: {
-          options: [[PaymentProvider.Momo, PaymentProvider.VNPay]],
-          errorMessage: MESSAGES.PAYMENT_METHOD_IS_INVALID
-        },
-        toInt: true
-      },
       'contact_info.full_name': {
         notEmpty: {
           errorMessage: MESSAGES.CONTACT_FULL_NAME_IS_REQUIRED
@@ -363,11 +353,7 @@ export const updateBookingStatusValidator = validate(
           errorMessage: MESSAGES.BOOKING_STATUS_IS_REQUIRED
         },
         isIn: {
-          options: [[
-            BookingStatus.Confirmed,
-            BookingStatus.Completed,
-            BookingStatus.Cancelled
-          ]],
+          options: [[BookingStatus.Confirmed, BookingStatus.Completed, BookingStatus.Cancelled]],
           errorMessage: MESSAGES.BOOKING_STATUS_IS_INVALID
         },
         toInt: true

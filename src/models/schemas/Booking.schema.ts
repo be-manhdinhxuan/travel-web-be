@@ -47,7 +47,6 @@ interface BookingType {
   price_detail: PriceDetailType
   total_price: number
   final_price: number
-  payment_method: PaymentProvider
   status?: BookingStatus
   cancelled_reason?: string
   created_at?: Date
@@ -66,7 +65,6 @@ export default class Booking {
   price_detail: PriceDetailType
   total_price: number
   final_price: number
-  payment_method: PaymentProvider
   status: BookingStatus
   cancelled_reason: string
   created_at: Date
@@ -84,7 +82,6 @@ export default class Booking {
     this.price_detail = booking.price_detail
     this.total_price = booking.total_price
     this.final_price = booking.final_price
-    this.payment_method = booking.payment_method
     this.status = booking.status || BookingStatus.Pending
     this.cancelled_reason = booking.cancelled_reason || ''
     this.created_at = booking.created_at || date
