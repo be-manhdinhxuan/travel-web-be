@@ -6,6 +6,37 @@ import { ErrorWithStatus } from '~/models/Errors'
 import databaseServices from '~/services/database.services'
 import { validate } from '~/utils/validation'
 
+export const getPublicCouponsValidator = validate(
+  checkSchema(
+    {
+      page: {
+        optional: true,
+        isInt: {
+          options: { min: 1 },
+          errorMessage: MESSAGES.PAGE_MUST_BE_A_POSITIVE_INTEGER
+        },
+        toInt: true
+      },
+      limit: {
+        optional: true,
+        isInt: {
+          options: { min: 1, max: 100 },
+          errorMessage: MESSAGES.LIMIT_MUST_BE_FROM_1_TO_100
+        },
+        toInt: true
+      },
+      keyword: {
+        optional: true,
+        isString: {
+          errorMessage: MESSAGES.KEYWORD_MUST_BE_A_STRING
+        },
+        trim: true
+      }
+    },
+    ['query']
+  )
+)
+
 export const createCouponValidator = validate(
   checkSchema(
     {

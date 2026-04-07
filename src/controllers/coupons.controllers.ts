@@ -11,7 +11,12 @@ import { MESSAGES } from '~/constants/messages'
 import couponsService from '~/services/coupons.services'
 
 export const getPublicCouponsController = async (req: Request, res: Response) => {
-  const result = await couponsService.getPublicCoupons()
+  const page = Number(req.query.page) || 1
+  const limit = Number(req.query.limit) || 10
+  const keyword = (req.query.keyword as string) || ''
+
+  const result = await couponsService.getPublicCoupons({ page, limit, keyword })
+
   return res.json({
     message: MESSAGES.GET_COUPONS_SUCCESS,
     result

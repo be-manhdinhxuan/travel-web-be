@@ -12,27 +12,57 @@ import { MESSAGES } from '~/constants/messages'
 import { BookingStatus } from '~/constants/enums'
 
 class CouponsService {
-  async getPublicCoupons() {
-    const coupons = await databaseServices.coupons
-      .find(
-        {
-          is_active: true,
-          expires_at: { $gte: new Date() },
-          $expr: { $lt: ['$used_count', '$max_usage'] }
-        },
-        {
+  async getPublicCoupons(params: { page?: number; limit?: number; keyword?: string }) {
+    let { page = 1, limit = 10, keyword = '' } = params
+
+    page = Number(page) || 1
+    limit = Number(limit) || 10
+
+    if (page < 1) page = 1
+    if (limit < 1 || limit > 100) limit = 10
+
+    const skip = (page - 1) * limit
+
+    const query: any = {
+      is_active: true,
+      expires_at: { $gte: new Date() },
+      $expr: { $lt: ['$used_count', '$max_usage'] }
+    }
+
+    if (keyword.trim()) {
+      query.code = {
+        $regex: keyword.trim(),
+        $options: 'i'
+      }
+    }
+
+    const [coupons, total] = await Promise.all([
+      databaseServices.coupons
+        .find(query, {
           projection: {
             code: 1,
             value: 1,
             min_order_value: 1,
             expires_at: 1
           }
-        }
-      )
-      .sort({ created_at: -1 })
-      .toArray()
+        })
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
 
-    return { coupons }
+      databaseServices.coupons.countDocuments(query)
+    ])
+
+    return {
+      coupons,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages: Math.ceil(total / limit)
+      }
+    }
   }
 
   async createCoupon(payload: CreateCouponReqBody) {

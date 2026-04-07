@@ -22,10 +22,10 @@ const nameSchema: ParamSchema = {
   },
   isLength: {
     options: {
-      min: 1,
+      min: 2,
       max: 100
     },
-    errorMessage: MESSAGES.NAME_LENGTH_MUST_BE_FROM_1_TO_100
+    errorMessage: MESSAGES.NAME_LENGTH_MUST_BE_FROM_2_TO_100
   },
   trim: true
 }

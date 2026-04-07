@@ -16,6 +16,7 @@ import {
   couponIdValidator,
   createCouponValidator,
   getCouponsValidator,
+  getPublicCouponsValidator,
   updateCouponValidator,
   validateCouponValidator
 } from '~/middlewares/coupons.middlewares'
@@ -28,8 +29,9 @@ const couponsRouter = Router()
  * Description: Get public coupons (available coupons for users)
  * Path: /public-coupons
  * Method: GET
+ * Query: { page, limit, keyword }
  */
-couponsRouter.get('/public-coupons', wrapRequestHandler(getPublicCouponsController))
+couponsRouter.get('/public-coupons', getPublicCouponsValidator, wrapRequestHandler(getPublicCouponsController))
 
 /**
  * Description: Create coupon (Admin only)
