@@ -1,5 +1,5 @@
 import slugify from 'slugify'
-import { CreateCategoryReqBody, UpdateCategoryReqBody } from '~/models/requests/Category.request'
+import { CreateCategoryReqBody, ToggleCategoryReqBody, UpdateCategoryReqBody } from '~/models/requests/Category.request'
 import databaseServices from './database.services'
 import { uploadImageToCloudinary } from '~/utils/uploadImageToCloudinary'
 import { Filter, ObjectId } from 'mongodb'
@@ -13,18 +13,23 @@ import { generateUniqueCategorySlug } from '~/utils/generateCategorySlug'
 import { TourStatus, UserRole } from '~/constants/enums'
 
 class CategoriesService {
-  async getCategories() {
+  async getCategories(role?: UserRole) {
+    const query: any = {}
+
+    if (role !== UserRole.Admin) {
+      query.is_active = true
+    }
+
     const categories = await databaseServices.categories
-      .find(
-        { is_active: true },
-        {
-          projection: {
-            name: 1,
-            slug: 1,
-            thumbnail: 1
-          }
+      .find(query, {
+        projection: {
+          name: 1,
+          slug: 1,
+          description: 1,
+          thumbnail: 1,
+          is_active: 1
         }
-      )
+      })
       .sort({ created_at: -1 })
       .toArray()
     return {
@@ -104,23 +109,6 @@ class CategoriesService {
       updateData.description = payload.description
     }
 
-    // active status
-    if (payload.is_active !== undefined) {
-      if (payload.is_active === false) {
-        const tourCount = await databaseServices.tours.countDocuments({
-          category_id: new ObjectId(id),
-          status: TourStatus.Active
-        })
-        if (tourCount > 0) {
-          throw new ErrorWithStatus({
-            message: MESSAGES.CATEGORY_HAS_ACTIVE_TOURS,
-            status: HTTP_STATUS.BAD_REQUEST
-          })
-        }
-      }
-      updateData.is_active = payload.is_active
-    }
-
     // upload thumbnail mới
     if (file) {
       const upload = await uploadImageToCloudinary(file.buffer, 'categories')
@@ -140,6 +128,86 @@ class CategoriesService {
     const updatedCategory = await databaseServices.categories.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: updateData },
+      { returnDocument: 'after' }
+    )
+
+    return {
+      category: updatedCategory
+    }
+  }
+
+  async updateCategoryImage(id: string, file: Express.Multer.File) {
+    const objectId = new ObjectId(id)
+
+    const category = await databaseServices.categories.findOne({
+      _id: objectId
+    })
+
+    if (!category) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.CATEGORY_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const upload = await uploadImageToCloudinary(file.buffer, 'categories')
+
+    // xóa ảnh cũ
+    if (category.thumbnail) {
+      const publicId = getPublicIdFromUrl(category.thumbnail)
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId)
+      }
+    }
+
+    const updatedCategory = await databaseServices.categories.findOneAndUpdate(
+      { _id: objectId },
+      {
+        $set: {
+          thumbnail: upload.secure_url
+        },
+        $currentDate: { updated_at: true }
+      },
+      { returnDocument: 'after' }
+    )
+
+    return { category: updatedCategory }
+  }
+
+  async toggleCategory(id: string, payload: ToggleCategoryReqBody) {
+    const category = await databaseServices.categories.findOne({
+      _id: new ObjectId(id)
+    })
+
+    if (!category) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.CATEGORY_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const updateData: Partial<Category> = {}
+
+    // active status
+    if (payload.is_active !== undefined) {
+      if (payload.is_active === false) {
+        const tourCount = await databaseServices.tours.countDocuments({
+          category_id: new ObjectId(id),
+          status: TourStatus.Active
+        })
+        if (tourCount > 0) {
+          throw new ErrorWithStatus({
+            message: MESSAGES.CATEGORY_HAS_ACTIVE_TOURS,
+            status: HTTP_STATUS.BAD_REQUEST
+          })
+        }
+      }
+      updateData.is_active = payload.is_active
+    }
+
+    const updatedCategory = await databaseServices.categories.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData, $currentDate: { updated_at: true } },
       { returnDocument: 'after' }
     )
 

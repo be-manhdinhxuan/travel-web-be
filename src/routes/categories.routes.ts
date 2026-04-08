@@ -6,7 +6,9 @@ import {
   deleteCategoryController,
   getCategoriesController,
   getDetailCategoryController,
-  updateCategoryController
+  toggleCategoryController,
+  updateCategoryController,
+  updateCategoryImageController
 } from '~/controllers/categories.controllers'
 import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
@@ -15,8 +17,10 @@ import {
   deleteCategoryValidator,
   getDetailCategoryValidator,
   optionalAccessTokenValidator,
+  toogleCategoryValidator,
   updateCategoryValidator
 } from '~/middlewares/categories.middlewares'
+import { checkAllowedFields } from '~/middlewares/common.middlewares'
 import { uploadImage } from '~/middlewares/uploads.middlewares'
 import { verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapRequestHandler } from '~/utils/handlers'
@@ -28,7 +32,7 @@ const categoriesRouter = Router()
  * Path:
  * Method: GET
  */
-categoriesRouter.get('', wrapRequestHandler(getCategoriesController))
+categoriesRouter.get('', optionalAccessTokenValidator, wrapRequestHandler(getCategoriesController))
 
 /**
  * Description: Get detail category
@@ -72,9 +76,40 @@ categoriesRouter.put(
   accessTokenValidator,
   verifiedUserValidator,
   authorize([UserRole.Admin]),
-  uploadImage.single('thumbnail'),
+  checkAllowedFields(['name', 'description']),
   updateCategoryValidator,
   wrapRequestHandler(updateCategoryController)
+)
+
+/**
+ * Description: Update category image
+ * Path: /:id/image
+ * Method: POST
+ * Header: { Authorization: Bearer <access_token>}
+ */
+categoriesRouter.post(
+  '/:id/image',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize([UserRole.Admin]),
+  uploadImage.single('thumbnail'),
+  wrapRequestHandler(updateCategoryImageController)
+)
+
+/**
+ * Description: Toogle status category
+ * Path: /:id
+ * Method: PATCH
+ * Header: { Authorization: Bearer <access_token>}
+ * Body: {is_active: boolean (required)}
+ */
+categoriesRouter.patch(
+  '/:id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize([UserRole.Admin]),
+  toogleCategoryValidator,
+  wrapRequestHandler(toggleCategoryController)
 )
 
 /**

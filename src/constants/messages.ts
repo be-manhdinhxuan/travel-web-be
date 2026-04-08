@@ -91,6 +91,8 @@ export const MESSAGES = {
   DESCRIPTION_MUST_BE_STRING: 'Description must be a string',
   CREATE_CATEGORY_SUCCESS: 'Create category success',
   CATEGORY_ALREADY_EXISTS: 'Category already exists',
+  CATEGORY_STATUS_IS_REQUIRED: 'Category status is required',
+  TOGGLE_CATEGORY_SUCCESS: 'Toggle category success',
   GET_CATEGORIES_SUCCESS: 'Get categories success',
   CATEGORY_ID_IS_REQUIRED: 'Category id is required',
   CATEGORY_ID_INVALID: 'Category id is invalid',
@@ -104,6 +106,8 @@ export const MESSAGES = {
 
   CATEGORY_ID_MUST_BE_A_STRING: 'Category id must be a string',
   CATEGORY_ID_IS_INVALID: 'Category id is invalid',
+  UPDATE_CATEGORY_IMAGE_SUCCESS: 'Update category image success',
+  THUMBNAIL_IS_REQUIRED: 'Thumbnail is required',
 
   TOUR_NAME_IS_REQUIRED: 'Tour name is required',
   TOUR_NAME_MUST_BE_A_STRING: 'Tour name must be a string',

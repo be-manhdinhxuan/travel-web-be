@@ -15,6 +15,7 @@ export interface UpdateCategoryReqParams extends ParamsDictionary {
 export interface UpdateCategoryReqBody {
   name?: string
   description?: string
-  thumbnail?: string
-  is_active?: boolean
+}
+export interface ToggleCategoryReqBody {
+  is_active: boolean
 }

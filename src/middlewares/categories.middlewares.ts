@@ -121,9 +121,20 @@ export const updateCategoryValidator = validate(
           errorMessage: MESSAGES.DESCRIPTION_MUST_BE_STRING
         },
         trim: true
-      },
+      }
+    },
+    ['body', 'params']
+  )
+)
+
+export const toogleCategoryValidator = validate(
+  checkSchema(
+    {
+      id: idCategoryValidator,
       is_active: {
-        optional: true,
+        notEmpty: {
+          errorMessage: MESSAGES.CATEGORY_STATUS_IS_REQUIRED
+        },
         isBoolean: {
           errorMessage: MESSAGES.CATEGORY_STATUS_IS_INVALID
         }
