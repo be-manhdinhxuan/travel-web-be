@@ -45,66 +45,171 @@ class StatsService {
   async getOverviewStats(period: string) {
     const { current, previous } = getPeriodRange(period)
 
-    // doanh thu — chỉ tính booking confirmed/completed
-    const [current_revenue, previous_revenue, current_bookings, previous_bookings, current_users, previous_users] =
-      await Promise.all([
-        // doanh thu kỳ hiện tại
-        databaseServices.payments
-          .aggregate([
-            {
-              $match: {
-                status: PaymentStatus.Success,
-                paid_at: { $gte: current.from, $lte: current.to }
-              }
-            },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
-          ])
-          .toArray()
-          .then((r) => r[0]?.total || 0),
+    const [
+      current_revenue,
+      previous_revenue,
+      current_bookings,
+      current_cancelled,
+      previous_bookings,
+      previous_cancelled,
+      current_users,
+      previous_users,
+      revenueByDate,
+      bookingStats
+    ] = await Promise.all([
+      // ===== DOANH THU =====
+      databaseServices.payments
+        .aggregate([
+          {
+            $match: {
+              status: PaymentStatus.Success,
+              paid_at: { $gte: current.from, $lte: current.to }
+            }
+          },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
+        ])
+        .toArray()
+        .then((r) => r[0]?.total || 0),
 
-        // doanh thu kỳ trước
-        databaseServices.payments
-          .aggregate([
-            {
-              $match: {
-                status: PaymentStatus.Success,
-                paid_at: { $gte: previous.from, $lte: previous.to }
-              }
-            },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
-          ])
-          .toArray()
-          .then((r) => r[0]?.total || 0),
+      databaseServices.payments
+        .aggregate([
+          {
+            $match: {
+              status: PaymentStatus.Success,
+              paid_at: { $gte: previous.from, $lte: previous.to }
+            }
+          },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
+        ])
+        .toArray()
+        .then((r) => r[0]?.total || 0),
 
-        // booking kỳ hiện tại
-        databaseServices.bookings.countDocuments({
-          created_at: { $gte: current.from, $lte: current.to }
-        }),
+      // ===== BOOKING =====
+      databaseServices.bookings.countDocuments({
+        created_at: { $gte: current.from, $lte: current.to },
+        status: { $in: [BookingStatus.Confirmed, BookingStatus.Completed] }
+      }),
 
-        // booking kỳ trước
-        databaseServices.bookings.countDocuments({
-          created_at: { $gte: previous.from, $lte: previous.to }
-        }),
+      databaseServices.bookings.countDocuments({
+        created_at: { $gte: current.from, $lte: current.to },
+        status: BookingStatus.Cancelled
+      }),
 
-        // user mới kỳ hiện tại
-        databaseServices.users.countDocuments({
-          created_at: { $gte: current.from, $lte: current.to }
-        }),
+      databaseServices.bookings.countDocuments({
+        created_at: { $gte: previous.from, $lte: previous.to },
+        status: { $in: [BookingStatus.Confirmed, BookingStatus.Completed] }
+      }),
 
-        // user mới kỳ trước
-        databaseServices.users.countDocuments({
-          created_at: { $gte: previous.from, $lte: previous.to }
-        })
-      ])
+      databaseServices.bookings.countDocuments({
+        created_at: { $gte: previous.from, $lte: previous.to },
+        status: BookingStatus.Cancelled
+      }),
 
+      // ===== USERS =====
+      databaseServices.users.countDocuments({
+        created_at: { $gte: current.from, $lte: current.to }
+      }),
+
+      databaseServices.users.countDocuments({
+        created_at: { $gte: previous.from, $lte: previous.to }
+      }),
+
+      // ===== CHART: REVENUE =====
+      databaseServices.payments
+        .aggregate([
+          {
+            $match: {
+              status: PaymentStatus.Success,
+              paid_at: { $gte: current.from, $lte: current.to }
+            }
+          },
+          {
+            $group: {
+              _id: {
+                $dateToString: { format: '%Y-%m-%d', date: '$paid_at' }
+              },
+              total: { $sum: '$amount' }
+            }
+          },
+          { $sort: { _id: 1 } }
+        ])
+        .toArray(),
+
+      // ===== CHART: BOOKING =====
+      databaseServices.bookings
+        .aggregate([
+          {
+            $match: {
+              created_at: { $gte: current.from, $lte: current.to }
+            }
+          },
+          {
+            $group: {
+              _id: {
+                date: {
+                  $dateToString: { format: '%Y-%m-%d', date: '$created_at' }
+                },
+                status: '$status'
+              },
+              count: { $sum: 1 }
+            }
+          }
+        ])
+        .toArray()
+    ])
+
+    // ===== TỶ LỆ HUỶ =====
+    const current_total = current_bookings + current_cancelled
+    const previous_total = previous_bookings + previous_cancelled
+
+    const current_cancellation_rate = current_total === 0 ? 0 : (current_cancelled / current_total) * 100
+
+    const previous_cancellation_rate = previous_total === 0 ? 0 : (previous_cancelled / previous_total) * 100
+
+    // ===== BUILD CHART DATA =====
+
+    // labels (ngày)
+    const labels = revenueByDate.map((i) => i._id)
+
+    const revenues = revenueByDate.map((i) => i.total)
+
+    const bookingsMap: Record<string, number> = {}
+    const cancelledMap: Record<string, number> = {}
+
+    bookingStats.forEach((i) => {
+      const date = i._id.date
+
+      if (i._id.status === BookingStatus.Cancelled) {
+        cancelledMap[date] = i.count
+      } else {
+        bookingsMap[date] = (bookingsMap[date] || 0) + i.count
+      }
+    })
+
+    const bookings = labels.map((d) => bookingsMap[d] || 0)
+    const cancelled = labels.map((d) => cancelledMap[d] || 0)
+
+    // ===== RETURN =====
     return {
       total_revenue: current_revenue,
       total_bookings: current_bookings,
+      cancelled_bookings: current_cancelled,
+      cancellation_rate: Number(current_cancellation_rate.toFixed(2)),
       new_users: current_users,
+
+      // CHART DATA
+      chart: {
+        labels,
+        revenues,
+        bookings,
+        cancelled
+      },
+
       comparison_with_previous: {
         revenue_growth: calcGrowth(current_revenue, previous_revenue),
         bookings_growth: calcGrowth(current_bookings, previous_bookings),
-        users_growth: calcGrowth(current_users, previous_users)
+        users_growth: calcGrowth(current_users, previous_users),
+        cancellation_rate_growth: calcGrowth(current_cancellation_rate, previous_cancellation_rate)
       }
     }
   }
