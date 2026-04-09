@@ -263,7 +263,7 @@ export const updateUserRoleValidator = validate(
           errorMessage: MESSAGES.ROLE_IS_REQUIRED
         },
         isInt: {
-          options: { min: 0, max: 1 },
+          options: { min: 0, max: 2 },
           errorMessage: MESSAGES.ROLE_IS_INVALID
         }
       }

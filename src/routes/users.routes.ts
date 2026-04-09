@@ -172,7 +172,7 @@ usersRouter.patch(
  * Method: PATCH
  * Header: { Authorization: Bearer <access_token> }
  * Params: { id: ObjectId }
- * Body: { status: number } // 0: inactive, 1: active
+ * Body: { status: number } // 0: active, 1: banned
  */
 usersRouter.patch(
   '/:id/status',

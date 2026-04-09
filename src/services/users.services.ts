@@ -7,6 +7,7 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { comparePassword, hashPassword } from '~/utils/crypto'
+import { UserRole } from '~/constants/enums'
 
 class UsersService {
   async getMe(user_id: string) {
@@ -392,6 +393,13 @@ class UsersService {
       throw new ErrorWithStatus({
         message: MESSAGES.USER_NOT_FOUND,
         status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    if (user.role === UserRole.Admin || role === UserRole.Admin) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.NOT_ALLOWWED_TO_UPDATE_ADMIN_ROLE,
+        status: HTTP_STATUS.BAD_REQUEST
       })
     }
 

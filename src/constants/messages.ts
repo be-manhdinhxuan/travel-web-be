@@ -79,6 +79,7 @@ export const MESSAGES = {
   ROLE_IS_INVALID: 'Role is invalid',
   ROLE_IS_REQUIRED: 'Role is required',
   CANNOT_UPDATE_OWN_ROLE: 'Cannot update own role',
+  NOT_ALLOWWED_TO_UPDATE_ADMIN_ROLE: 'Not allowed to update admin role',
   STATUS_IS_REQUIRED: 'Status is required',
   STATUS_IS_INVALID: 'Status is invalid',
   UPDATE_USER_STATUS_SUCCESS: 'Update user status success',
