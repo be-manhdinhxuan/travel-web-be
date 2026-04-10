@@ -306,7 +306,7 @@ class BookingServices {
     const limit = Number(query.limit) || 10
     const skip = (page - 1) * limit
 
-    const filter: Filter<Booking> = {}
+    const filter: any = {}
 
     if (query.status !== undefined) {
       filter.status = Number(query.status)
@@ -330,13 +330,61 @@ class BookingServices {
       }
       if (query.to_date) {
         const toDate = new Date(query.to_date)
-        toDate.setHours(23, 59, 59, 999) // lấy hết ngày to_date
+        toDate.setHours(23, 59, 59, 999)
         filter.created_at.$lte = toDate
       }
     }
 
     const [bookings, total] = await Promise.all([
-      databaseServices.bookings.find(filter).sort({ created_at: -1 }).skip(skip).limit(limit).toArray(),
+      databaseServices.bookings
+        .aggregate([
+          { $match: filter },
+
+          // JOIN PAYMENT MỚI NHẤT
+          {
+            $lookup: {
+              from: 'payments',
+              let: { bookingId: '$_id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: { $eq: ['$booking_id', '$$bookingId'] }
+                  }
+                },
+                { $sort: { created_at: -1 } },
+                { $limit: 1 }
+              ],
+              as: 'payment'
+            }
+          },
+
+          {
+            $unwind: {
+              path: '$payment',
+              preserveNullAndEmptyArrays: true
+            }
+          },
+
+          // ADD payment_status
+          {
+            $addFields: {
+              payment_status: '$payment.status'
+            }
+          },
+
+          // bỏ payment raw
+          {
+            $project: {
+              payment: 0
+            }
+          },
+
+          { $sort: { created_at: -1 } },
+          { $skip: skip },
+          { $limit: limit }
+        ])
+        .toArray(),
+
       databaseServices.bookings.countDocuments(filter)
     ])
 
@@ -404,6 +452,8 @@ class BookingServices {
       })
     }
 
+    let paymentStatus: PaymentStatus | null = null
+
     // Cancelled flow
     if (status === BookingStatus.Cancelled) {
       if (!cancelled_reason) {
@@ -413,7 +463,7 @@ class BookingServices {
         })
       }
 
-      // Hoàn slot (chỉ khi chuyển sang cancel lần đầu)
+      // Hoàn slot
       const totalPassengers = booking.passengers.adults + booking.passengers.children + booking.passengers.babies
 
       await databaseServices.schedules.updateOne(
@@ -421,16 +471,17 @@ class BookingServices {
         { $inc: { available_slots: totalPassengers } }
       )
 
-      // Update payment → refund_pending
+      // Lấy payment SUCCESS gần nhất
       const payment = await databaseServices.payments.findOne(
         {
           booking_id: booking._id,
           status: PaymentStatus.Success
         },
-        { sort: { created_at: -1 } } // lấy payment mới nhất có status success
+        { sort: { created_at: -1 } }
       )
 
-      if (payment?.status === PaymentStatus.Success) {
+      if (payment) {
+        // update sang refund_pending
         await databaseServices.payments.updateOne(
           { _id: payment._id },
           {
@@ -440,10 +491,12 @@ class BookingServices {
             }
           }
         )
+
+        paymentStatus = PaymentStatus.Refunded_Pending
       }
     }
 
-    // Completed flow: chỉ cho phép chuyển sang completed nếu đã qua ngày return_date
+    // Nếu update sang completed thì phải check đã qua ngày return_date chưa, chưa thì không cho update
     if (status === BookingStatus.Completed) {
       const returnDate = new Date(booking.tour_snapshot.return_date)
 
@@ -455,7 +508,7 @@ class BookingServices {
       }
     }
 
-    // Update trạng thái booking
+    // Cập nhật trạng thái booking
     const updatedBooking = await databaseServices.bookings.findOneAndUpdate(
       { _id: new ObjectId(id) },
       {
@@ -468,7 +521,66 @@ class BookingServices {
       { returnDocument: 'after' }
     )
 
-    return { booking: updatedBooking }
+    // Nếu booking bị cancelled ở trên thì đã có paymentStatus, còn nếu update bình thường sang confirmed/completed thì phải lấy payment status mới nhất
+    if (paymentStatus === null) {
+      const latestPayment = await databaseServices.payments.findOne(
+        { booking_id: booking._id },
+        { sort: { created_at: -1 } }
+      )
+
+      paymentStatus = latestPayment?.status ?? null
+    }
+
+    return {
+      booking: {
+        ...updatedBooking,
+        payment_status: paymentStatus
+      }
+    }
+  }
+
+  async confirmRefund(id: string) {
+    const booking = await databaseServices.bookings.findOne({
+      _id: new ObjectId(id)
+    })
+
+    // Chỉ refund khi booking đã bị cancel
+    if (booking?.status !== BookingStatus.Cancelled) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.BOOKING_NOT_CANCELLED,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // Lấy payment SUCCESS gần nhất
+    const payment = await databaseServices.payments.findOne(
+      {
+        booking_id: booking._id,
+        status: PaymentStatus.Refunded_Pending
+      },
+      { sort: { created_at: -1 } }
+    )
+
+    if (!payment) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.PAYMENT_NOT_FOUND_OR_INVALID,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // Update sang refunded
+    await databaseServices.payments.updateOne(
+      { _id: payment._id },
+      {
+        $set: {
+          status: PaymentStatus.Refunded,
+          refunded_at: new Date(),
+          updated_at: new Date()
+        }
+      }
+    )
+
+    return { message: 'Refund confirmed' }
   }
 }
 

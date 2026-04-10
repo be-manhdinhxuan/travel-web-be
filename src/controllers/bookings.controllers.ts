@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
+import { PaymentStatus } from '~/constants/enums'
 import { MESSAGES } from '~/constants/messages'
 import {
   CreateBookingReqBody,
@@ -84,6 +85,18 @@ export const updateBookingStatusController = async (
   const result = await bookingsService.updateBookingStatus(id as string, req.body)
   return res.json({
     message: MESSAGES.UPDATE_BOOKING_STATUS_SUCCESS,
+    result
+  })
+}
+
+export const confirmRefundController = async (
+  req: Request<{id: string}>,
+  res: Response
+) => {
+  const {id} = req.params
+  const result = await bookingsService.confirmRefund(id)
+  return res.json({
+    message: MESSAGES.CONFIRM_REFUND_SUCCESS,
     result
   })
 }

@@ -1,6 +1,6 @@
 import { checkSchema } from 'express-validator'
 import { ObjectId } from 'mongodb'
-import { BookingStatus, PaymentProvider, ScheduleStatus } from '~/constants/enums'
+import { BookingStatus, PaymentProvider, PaymentStatus, ScheduleStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
@@ -373,6 +373,47 @@ export const updateBookingStatusValidator = validate(
           errorMessage: MESSAGES.REASON_MUST_BE_A_STRING
         },
         trim: true
+      }
+    },
+    ['body', 'params']
+  )
+)
+
+export const confirmRefundValidator = validate(
+  checkSchema(
+    {
+      id: {
+        custom: {
+          options: async (value: string, { req }) => {
+            if (!ObjectId.isValid(value)) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_ID_IS_INVALID,
+                status: HTTP_STATUS.BAD_REQUEST
+              })
+            }
+            const booking = await databaseServices.bookings.findOne({
+              _id: new ObjectId(value)
+            })
+            if (!booking) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            ;(req as Request).booking = booking
+            return true
+          }
+        }
+      },
+      status: {
+        notEmpty: {
+          errorMessage: MESSAGES.PAYMENT_STATUS_IS_REQUIRED
+        },
+        isIn: {
+          options: [[PaymentStatus.Refunded]],
+          errorMessage: MESSAGES.PAYMENT_STATUS_IS_INVALID
+        },
+        toInt: true
       }
     },
     ['body', 'params']

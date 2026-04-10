@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { UserRole } from '~/constants/enums'
 import {
   cancelBookingController,
+  confirmRefundController,
   createBookingController,
   getBookingDetailController,
   getBookingsController,
@@ -13,6 +14,7 @@ import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import {
   cancelBookingValidator,
+  confirmRefundValidator,
   createBookingValidator,
   getBookingDetailValidator,
   getBookingsValidator,
@@ -145,6 +147,23 @@ bookingsRouter.patch(
   authorize([UserRole.Admin, UserRole.Employee]),
   updateBookingStatusValidator,
   wrapRequestHandler(updateBookingStatusController)
+)
+
+/**
+ * Description: Confirm refund payment when cancelling a booking (Admin)
+ * Path: /:id/refund
+ * Method: PATCH
+ * Header: { Authorization: Bearer <access_token> }
+ * Param: id - booking id
+ * Body: { status (int, required) — 3: refunded }
+ */
+bookingsRouter.patch(
+  '/:id/refund',
+  accessTokenValidator,
+  verifiedUserValidator,
+  authorize([UserRole.Admin, UserRole.Employee]),
+  confirmRefundValidator,
+  wrapRequestHandler(confirmRefundController)
 )
 
 export default bookingsRouter
