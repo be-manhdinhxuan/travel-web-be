@@ -18,7 +18,6 @@ class PaymentsService {
 
     // gọi MoMo API tạo URL thanh toán
     const momoResponse = await createMomoPaymentUrl(order_id, booking!.final_price, order_info)
-    console.log('momoResponse:', JSON.stringify(momoResponse))
 
     // lưu payment vào DB
     const payment = new Payment({
@@ -27,6 +26,7 @@ class PaymentsService {
       provider: PaymentProvider.Momo,
       provider_order_id: order_id,
       amount: booking!.final_price,
+      status: PaymentStatus.Pending,
       raw_response: momoResponse
     })
 
@@ -161,7 +161,8 @@ class PaymentsService {
       user_id: new ObjectId(user_id),
       provider: PaymentProvider.VNPay,
       provider_order_id: order_id,
-      amount: booking!.final_price
+      amount: booking!.final_price,
+      status: PaymentStatus.Pending
     })
 
     await databaseServices.payments.insertOne(payment)
