@@ -11,7 +11,7 @@ import {
 } from '~/models/requests/Booking.requests'
 import Booking from '~/models/schemas/Booking.schema'
 import { generateBookingCode } from '~/utils/generateBookingCode'
-import { BookingStatus } from '~/constants/enums'
+import { BookingStatus, PaymentStatus } from '~/constants/enums'
 
 class BookingServices {
   async createBooking(user_id: string, payload: CreateBookingReqBody) {
@@ -352,29 +352,110 @@ class BookingServices {
   }
 
   async getBookingDetail(id: string) {
-    const booking = await databaseServices.bookings.findOne({
-      _id: new ObjectId(id)
-    })
-    return { booking }
+    const result = await databaseServices.bookings
+      .aggregate([
+        {
+          $match: {
+            _id: new ObjectId(id)
+          }
+        },
+
+        // JOIN PAYMENT (latest)
+        {
+          $lookup: {
+            from: 'payments',
+            let: { bookingId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$booking_id', '$$bookingId'] }
+                }
+              },
+              { $sort: { created_at: -1 } },
+              { $limit: 1 }
+            ],
+            as: 'payment'
+          }
+        },
+        {
+          $unwind: {
+            path: '$payment',
+            preserveNullAndEmptyArrays: true
+          }
+        }
+      ])
+      .toArray()
+
+    return { booking: result[0] }
   }
 
   async updateBookingStatus(id: string, payload: UpdateBookingStatusReqBody) {
     const { status, cancelled_reason } = payload
 
-    const booking = await databaseServices.bookings.findOne({
+    const booking = (await databaseServices.bookings.findOne({
       _id: new ObjectId(id)
-    })
+    })) as Booking
 
-    // hoàn lại available_slots khi admin hủy booking
-    if (status === BookingStatus.Cancelled) {
-      const totalPassengers = booking!.passengers.adults + booking!.passengers.children + booking!.passengers.babies
-
-      await databaseServices.schedules.updateOne(
-        { _id: booking!.schedule_id },
-        { $inc: { available_slots: totalPassengers } }
-      )
+    // Không update nếu đã cancel
+    if (booking.status === BookingStatus.Cancelled) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.CANNOT_UPDATE_CANCELLED_BOOKING,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
     }
 
+    // Cancelled flow
+    if (status === BookingStatus.Cancelled) {
+      if (!cancelled_reason) {
+        throw new ErrorWithStatus({
+          message: MESSAGES.CANCELLED_REASON_IS_REQUIRED,
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
+
+      // Hoàn slot (chỉ khi chuyển sang cancel lần đầu)
+      const totalPassengers = booking.passengers.adults + booking.passengers.children + booking.passengers.babies
+
+      await databaseServices.schedules.updateOne(
+        { _id: booking.schedule_id },
+        { $inc: { available_slots: totalPassengers } }
+      )
+
+      // Update payment → refund_pending
+      const payment = await databaseServices.payments.findOne(
+        {
+          booking_id: booking._id,
+          status: PaymentStatus.Success
+        },
+        { sort: { created_at: -1 } } // lấy payment mới nhất có status success
+      )
+
+      if (payment?.status === PaymentStatus.Success) {
+        await databaseServices.payments.updateOne(
+          { _id: payment._id },
+          {
+            $set: {
+              status: PaymentStatus.Refunded_Pending,
+              updated_at: new Date()
+            }
+          }
+        )
+      }
+    }
+
+    // Completed flow: chỉ cho phép chuyển sang completed nếu đã qua ngày return_date
+    if (status === BookingStatus.Completed) {
+      const returnDate = new Date(booking.tour_snapshot.return_date)
+
+      if (returnDate > new Date()) {
+        throw new ErrorWithStatus({
+          message: MESSAGES.TOUR_NOT_FINISHED_YET,
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
+    }
+
+    // Update trạng thái booking
     const updatedBooking = await databaseServices.bookings.findOneAndUpdate(
       { _id: new ObjectId(id) },
       {

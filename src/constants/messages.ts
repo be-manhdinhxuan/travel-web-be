@@ -135,6 +135,8 @@ export const MESSAGES = {
   TOUR_INCLUDES_MUST_BE_ARRAY_OF_STRING: 'Tour includes must be an array of string',
   TOUR_EXCLUDES_MUST_BE_AN_ARRAY: 'Tour excludes must be an array',
   TOUR_EXCLUDES_MUST_BE_ARRAY_OF_STRING: 'Tour excludes must be an array of string',
+  TOUR_NOT_FINISHED_YET: 'Tour has not finished yet',
+  CANNOT_UPDATE_CANCELLED_BOOKING: 'Cannot update cancelled booking',
   CREATE_TOUR_SUCCESS: 'Create tour success',
   PAGE_MUST_BE_A_POSITIVE_INTEGER: 'Page must be a positive integer',
   LIMIT_MUST_BE_FROM_1_TO_100: 'Limit must be from 1 to 100',

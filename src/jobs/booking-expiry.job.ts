@@ -54,7 +54,25 @@ const cancelExpiredBookings = async () => {
   console.log(`Đã hủy ${expiredBookings.length} booking hết hạn`)
 }
 
+const completeExpiredBookings = async () => {
+  await databaseServices.bookings.updateMany(
+    {
+      status: BookingStatus.Confirmed,
+      'tour_snapshot.return_date': { $lt: new Date() }
+    },
+    {
+      $set: {
+        status: BookingStatus.Completed,
+        updated_at: new Date()
+      }
+    }
+  )
+}
+
 // chạy mỗi 5 phút
 const bookingExpiryJob = cron.schedule('*/5 * * * *', cancelExpiredBookings)
+
+// Chạy mỗi ngày lúc 00:00
+cron.schedule('0 0 * * *', completeExpiredBookings)
 
 export default bookingExpiryJob
