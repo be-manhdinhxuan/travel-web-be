@@ -34,7 +34,7 @@ statsRouter.get(
  * Path: /revenue
  * Method: GET
  * Header: { Authorization: Bearer <access_token> }
- * Query: { period (week | month | year), year (int) }
+ * Query: { period (today, week | month | year), year (int) }
  */
 statsRouter.get(
   '/revenue',

@@ -35,35 +35,101 @@ const getPeriodRange = (period: string) => {
   return { current, previous }
 }
 
-// helper tính % tăng giảm
-const calcGrowth = (current: number, previous: number) => {
-  if (previous === 0) return current > 0 ? 100 : 0
-  return Math.round(((current - previous) / previous) * 100)
+function fillMissingDates(data: any[], days: number) {
+  const map = new Map(data.map((item) => [item.date, item]))
+
+  const result: any[] = []
+  const today = new Date()
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(today.getDate() - i)
+
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
+
+    const existing = map.get(dateStr)
+
+    result.push({
+      date: dateStr,
+      revenue: existing?.revenue || 0,
+      refunds: existing?.refunds || 0,
+      refund_pending: existing?.refund_pending || 0,
+      bookings: existing?.bookings || 0,
+      cancelled: existing?.cancelled || 0,
+      net_revenue: existing?.net_revenue || 0
+    })
+  }
+
+  return result
+}
+
+function fillMissingMonths(data: any[], year: number) {
+  const map = new Map(data.map((item) => [item.date, item]))
+
+  const result: any[] = []
+
+  for (let m = 1; m <= 12; m++) {
+    const monthStr = String(m).padStart(2, '0')
+    const dateStr = `${year}-${monthStr}`
+
+    const existing = map.get(dateStr)
+
+    result.push({
+      date: dateStr,
+      revenue: existing?.revenue || 0,
+      refunds: existing?.refunds || 0,
+      refund_pending: existing?.refund_pending || 0,
+      bookings: existing?.bookings || 0,
+      cancelled: existing?.cancelled || 0,
+      net_revenue: existing?.net_revenue || 0
+    })
+  }
+
+  return result
+}
+
+function fillMissingYears(data: any[]) {
+  const map = new Map(data.map((item) => [item.date, item]))
+
+  const result: any[] = []
+  const currentYear = new Date().getFullYear()
+
+  const fromYear = currentYear - 4
+
+  for (let y = fromYear; y <= currentYear; y++) {
+    const yearStr = String(y)
+
+    const existing = map.get(yearStr)
+
+    result.push({
+      date: yearStr,
+      revenue: existing?.revenue || 0,
+      refunds: existing?.refunds || 0,
+      refund_pending: existing?.refund_pending || 0,
+      bookings: existing?.bookings || 0,
+      cancelled: existing?.cancelled || 0,
+      net_revenue: existing?.net_revenue || 0
+    })
+  }
+
+  return result
 }
 
 class StatsService {
   async getOverviewStats(period: string) {
-    const { current, previous } = getPeriodRange(period)
+    const { from, to } = getPeriodRange(period).current
 
-    const [
-      current_revenue,
-      previous_revenue,
-      current_bookings,
-      current_cancelled,
-      previous_bookings,
-      previous_cancelled,
-      current_users,
-      previous_users,
-      revenueByDate,
-      bookingStats
-    ] = await Promise.all([
-      // ===== DOANH THU =====
+    const [revenue, refund, bookings, cancelled, new_users] = await Promise.all([
+      // revenue
       databaseServices.payments
         .aggregate([
           {
             $match: {
               status: PaymentStatus.Success,
-              paid_at: { $gte: current.from, $lte: current.to }
+              paid_at: { $gte: from, $lte: to }
             }
           },
           { $group: { _id: null, total: { $sum: '$amount' } } }
@@ -71,12 +137,13 @@ class StatsService {
         .toArray()
         .then((r) => r[0]?.total || 0),
 
+      // refund
       databaseServices.payments
         .aggregate([
           {
             $match: {
-              status: PaymentStatus.Success,
-              paid_at: { $gte: previous.from, $lte: previous.to }
+              status: PaymentStatus.Refunded,
+              updated_at: { $gte: from, $lte: to }
             }
           },
           { $group: { _id: null, total: { $sum: '$amount' } } }
@@ -84,133 +151,37 @@ class StatsService {
         .toArray()
         .then((r) => r[0]?.total || 0),
 
-      // ===== BOOKING =====
+      // bookings success
       databaseServices.bookings.countDocuments({
-        created_at: { $gte: current.from, $lte: current.to },
+        created_at: { $gte: from, $lte: to },
         status: { $in: [BookingStatus.Confirmed, BookingStatus.Completed] }
       }),
 
+      // cancelled
       databaseServices.bookings.countDocuments({
-        created_at: { $gte: current.from, $lte: current.to },
+        updated_at: { $gte: from, $lte: to },
         status: BookingStatus.Cancelled
       }),
 
-      databaseServices.bookings.countDocuments({
-        created_at: { $gte: previous.from, $lte: previous.to },
-        status: { $in: [BookingStatus.Confirmed, BookingStatus.Completed] }
-      }),
-
-      databaseServices.bookings.countDocuments({
-        created_at: { $gte: previous.from, $lte: previous.to },
-        status: BookingStatus.Cancelled
-      }),
-
-      // ===== USERS =====
+      // users
       databaseServices.users.countDocuments({
-        created_at: { $gte: current.from, $lte: current.to }
-      }),
-
-      databaseServices.users.countDocuments({
-        created_at: { $gte: previous.from, $lte: previous.to }
-      }),
-
-      // ===== CHART: REVENUE =====
-      databaseServices.payments
-        .aggregate([
-          {
-            $match: {
-              status: PaymentStatus.Success,
-              paid_at: { $gte: current.from, $lte: current.to }
-            }
-          },
-          {
-            $group: {
-              _id: {
-                $dateToString: { format: '%Y-%m-%d', date: '$paid_at' }
-              },
-              total: { $sum: '$amount' }
-            }
-          },
-          { $sort: { _id: 1 } }
-        ])
-        .toArray(),
-
-      // ===== CHART: BOOKING =====
-      databaseServices.bookings
-        .aggregate([
-          {
-            $match: {
-              created_at: { $gte: current.from, $lte: current.to }
-            }
-          },
-          {
-            $group: {
-              _id: {
-                date: {
-                  $dateToString: { format: '%Y-%m-%d', date: '$created_at' }
-                },
-                status: '$status'
-              },
-              count: { $sum: 1 }
-            }
-          }
-        ])
-        .toArray()
+        created_at: { $gte: from, $lte: to }
+      })
     ])
 
-    // ===== TỶ LỆ HUỶ =====
-    const current_total = current_bookings + current_cancelled
-    const previous_total = previous_bookings + previous_cancelled
+    // calc
+    const total = bookings + cancelled
+    const cancel_rate = total === 0 ? 0 : (cancelled / total) * 100
 
-    const current_cancellation_rate = current_total === 0 ? 0 : (current_cancelled / current_total) * 100
+    const net_revenue = revenue - refund
 
-    const previous_cancellation_rate = previous_total === 0 ? 0 : (previous_cancelled / previous_total) * 100
-
-    // ===== BUILD CHART DATA =====
-
-    // labels (ngày)
-    const labels = revenueByDate.map((i) => i._id)
-
-    const revenues = revenueByDate.map((i) => i.total)
-
-    const bookingsMap: Record<string, number> = {}
-    const cancelledMap: Record<string, number> = {}
-
-    bookingStats.forEach((i) => {
-      const date = i._id.date
-
-      if (i._id.status === BookingStatus.Cancelled) {
-        cancelledMap[date] = i.count
-      } else {
-        bookingsMap[date] = (bookingsMap[date] || 0) + i.count
-      }
-    })
-
-    const bookings = labels.map((d) => bookingsMap[d] || 0)
-    const cancelled = labels.map((d) => cancelledMap[d] || 0)
-
-    // ===== RETURN =====
     return {
-      total_revenue: current_revenue,
-      total_bookings: current_bookings,
-      cancelled_bookings: current_cancelled,
-      cancellation_rate: Number(current_cancellation_rate.toFixed(2)),
-      new_users: current_users,
-
-      // CHART DATA
-      chart: {
-        labels,
-        revenues,
-        bookings,
-        cancelled
-      },
-
-      comparison_with_previous: {
-        revenue_growth: calcGrowth(current_revenue, previous_revenue),
-        bookings_growth: calcGrowth(current_bookings, previous_bookings),
-        users_growth: calcGrowth(current_users, previous_users),
-        cancellation_rate_growth: calcGrowth(current_cancellation_rate, previous_cancellation_rate)
-      }
+      revenue,
+      refund,
+      net_revenue,
+      bookings,
+      new_users,
+      cancel_rate: Number(cancel_rate.toFixed(2))
     }
   }
 
@@ -218,132 +189,215 @@ class StatsService {
     const now = new Date()
     const currentYear = year || now.getFullYear()
 
-    let pipeline: object[] = []
+    // Config dynamic for each period
+    const buildConfig = () => {
+      let matchRange: any
+      let paymentGroupId: any
+      let bookingGroupId: any
 
-    if (period === 'week') {
-      // 7 ngày gần nhất, group theo ngày
-      const from = new Date(now)
-      from.setDate(from.getDate() - 6)
-      from.setHours(0, 0, 0, 0)
-
-      pipeline = [
-        {
-          $match: {
-            status: PaymentStatus.Success,
-            paid_at: { $gte: from, $lte: now }
-          }
-        },
-        {
-          $group: {
-            _id: {
-              $dateToString: { format: '%Y-%m-%d', date: '$paid_at' }
-            },
-            revenue: { $sum: '$amount' },
-            bookings: { $sum: 1 }
-          }
-        },
-        { $sort: { _id: 1 } },
-        {
-          $project: {
-            _id: 0,
-            date: '$_id',
-            revenue: 1,
-            bookings: 1
-          }
+      if (period === 'today' || period === 'week') {
+        const start = new Date()
+        if (period === 'today') {
+          start.setHours(0, 0, 0, 0)
+        } else {
+          start.setDate(now.getDate() - 6)
+          start.setHours(0, 0, 0, 0)
         }
-      ]
-    } else if (period === 'month') {
-      // theo tháng trong năm
-      pipeline = [
-        {
-          $match: {
-            status: PaymentStatus.Success,
-            paid_at: {
-              $gte: new Date(currentYear, 0, 1),
-              $lte: new Date(currentYear, 11, 31, 23, 59, 59)
-            }
-          }
-        },
-        {
-          $group: {
-            _id: { $month: '$paid_at' },
-            revenue: { $sum: '$amount' },
-            bookings: { $sum: 1 }
-          }
-        },
-        { $sort: { _id: 1 } },
-        {
-          $project: {
-            _id: 0,
+
+        matchRange = { $gte: start, $lte: now }
+
+        paymentGroupId = {
+          $dateToString: {
+            format: '%Y-%m-%d',
             date: {
-              $concat: [
-                currentYear.toString(),
-                '-',
-                {
-                  $cond: {
-                    if: { $lt: ['$_id', 10] },
-                    then: { $concat: ['0', { $toString: '$_id' }] },
-                    else: { $toString: '$_id' }
-                  }
-                }
-              ]
-            },
-            revenue: 1,
-            bookings: 1
-          }
-        }
-      ]
-    } else if (period === 'year') {
-      // 5 năm gần nhất, group theo năm
-      const fromYear = currentYear - 4
-
-      pipeline = [
-        {
-          $match: {
-            status: PaymentStatus.Success,
-            paid_at: {
-              $gte: new Date(fromYear, 0, 1),
-              $lte: now
+              $cond: [{ $eq: ['$status', PaymentStatus.Success] }, '$paid_at', '$updated_at']
             }
           }
-        },
-        {
-          $group: {
-            _id: { $year: '$paid_at' },
-            revenue: { $sum: '$amount' },
-            bookings: { $sum: 1 }
-          }
-        },
-        { $sort: { _id: 1 } },
-        {
-          $project: {
-            _id: 0,
-            date: { $toString: '$_id' },
-            revenue: 1,
-            bookings: 1
+        }
+
+        bookingGroupId = {
+          $dateToString: {
+            format: '%Y-%m-%d',
+            date: '$updated_at'
           }
         }
-      ]
+      }
+
+      if (period === 'month') {
+        matchRange = {
+          $gte: new Date(currentYear, 0, 1),
+          $lte: new Date(currentYear, 11, 31, 23, 59, 59)
+        }
+
+        paymentGroupId = {
+          $month: {
+            $cond: [{ $eq: ['$status', PaymentStatus.Success] }, '$paid_at', '$updated_at']
+          }
+        }
+
+        bookingGroupId = { $month: '$updated_at' }
+      }
+
+      if (period === 'year') {
+        const fromYear = currentYear - 4
+
+        matchRange = {
+          $gte: new Date(fromYear, 0, 1),
+          $lte: now
+        }
+
+        paymentGroupId = {
+          $year: {
+            $cond: [{ $eq: ['$status', PaymentStatus.Success] }, '$paid_at', '$updated_at']
+          }
+        }
+
+        bookingGroupId = { $year: '$updated_at' }
+      }
+
+      return { matchRange, paymentGroupId, bookingGroupId }
     }
 
-    const chart_data = await databaseServices.payments.aggregate(pipeline).toArray()
+    const { matchRange, paymentGroupId, bookingGroupId } = buildConfig()
 
-    return { chart_data }
+    // AGGREGATE PAYMENTS
+    const paymentsRaw = await databaseServices.payments
+      .aggregate([
+        {
+          $match: {
+            status: {
+              $in: [PaymentStatus.Success, PaymentStatus.Refunded, PaymentStatus.Refunded_Pending]
+            },
+            $or: [{ paid_at: matchRange }, { updated_at: matchRange }]
+          }
+        },
+        {
+          $group: {
+            _id: paymentGroupId,
+
+            revenue: {
+              $sum: {
+                $cond: [{ $eq: ['$status', PaymentStatus.Success] }, '$amount', 0]
+              }
+            },
+
+            refunds: {
+              $sum: {
+                $cond: [{ $eq: ['$status', PaymentStatus.Refunded] }, '$amount', 0]
+              }
+            },
+
+            refund_pending: {
+              $sum: {
+                $cond: [{ $eq: ['$status', PaymentStatus.Refunded_Pending] }, '$amount', 0]
+              }
+            },
+
+            bookings: {
+              $sum: {
+                $cond: [{ $eq: ['$status', PaymentStatus.Success] }, 1, 0]
+              }
+            }
+          }
+        }
+      ])
+      .toArray()
+
+    // AGGREGATE CANCELLED BOOKINGS
+    const cancelledRaw = await databaseServices.bookings
+      .aggregate([
+        {
+          $match: {
+            status: BookingStatus.Cancelled,
+            updated_at: matchRange
+          }
+        },
+        {
+          $group: {
+            _id: bookingGroupId,
+            cancelled: { $sum: 1 }
+          }
+        }
+      ])
+      .toArray()
+
+    // FORMAT MAP KEY
+    const formatKey = (id: any) => {
+      if (period === 'month') {
+        return `${currentYear}-${String(id).padStart(2, '0')}`
+      }
+      if (period === 'year') {
+        return String(id)
+      }
+      return String(id)
+    }
+
+    const paymentMap = new Map(paymentsRaw.map((i) => [formatKey(i._id), i]))
+
+    const cancelledMap = new Map(cancelledRaw.map((i) => [formatKey(i._id), i.cancelled]))
+
+    // MERGE DATA
+    const allKeys = new Set([...paymentMap.keys(), ...cancelledMap.keys()])
+
+    const merged = Array.from(allKeys)
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      .map((date) => {
+        const p = paymentMap.get(date)
+
+        return {
+          date,
+          revenue: p?.revenue || 0,
+          refunds: p?.refunds || 0,
+          refund_pending: p?.refund_pending || 0,
+          bookings: p?.bookings || 0,
+          cancelled: cancelledMap.get(date) || 0,
+          net_revenue: (p?.revenue || 0) - (p?.refunds || 0)
+        }
+      })
+
+    // FILL MISSING DATES
+    if (period === 'week') {
+      return { chart_data: fillMissingDates(merged, 7) }
+    }
+
+    if (period === 'month') {
+      return { chart_data: fillMissingMonths(merged, currentYear) }
+    }
+
+    if (period === 'year') {
+      return { chart_data: fillMissingYears(merged) }
+    }
+
+    return { chart_data: merged }
   }
 
   async getTopToursStats(period: string, limit: number) {
     const now = new Date()
-    let from = new Date()
 
-    if (period === 'week') {
-      from.setDate(now.getDate() - 7)
-    } else if (period === 'month') {
-      from = new Date(now.getFullYear(), now.getMonth(), 1)
-    } else if (period === 'year') {
-      from = new Date(now.getFullYear(), 0, 1)
+    // Build dynamic from date based on period
+    const buildFromDate = () => {
+      if (period === 'week') {
+        const d = new Date(now)
+        d.setDate(now.getDate() - 6)
+        d.setHours(0, 0, 0, 0)
+        return d
+      }
+
+      if (period === 'month') {
+        return new Date(now.getFullYear(), now.getMonth(), 1)
+      }
+
+      if (period === 'year') {
+        return new Date(now.getFullYear(), 0, 1)
+      }
+
+      return new Date(0)
     }
 
-    const tours = await databaseServices.bookings
+    const from = buildFromDate()
+
+    // AGGREGATE TOURS
+    const toursRaw = await databaseServices.bookings
       .aggregate([
         {
           $match: {
@@ -351,29 +405,35 @@ class StatsService {
             created_at: { $gte: from, $lte: now }
           }
         },
+
         {
           $group: {
             _id: '$tour_snapshot.tour_id',
-            tour_name: { $first: '$tour_snapshot.tour_name' },
+            name: { $first: '$tour_snapshot.tour_name' },
             booking_count: { $sum: 1 },
             revenue: { $sum: '$final_price' }
-          }
-        },
-        { $sort: { booking_count: -1 } },
-        { $limit: limit },
-        {
-          $project: {
-            _id: 0,
-            tour_id: '$_id',
-            name: '$tour_name',
-            booking_count: 1,
-            revenue: 1
           }
         }
       ])
       .toArray()
 
-    return { tours }
+    // Calc total revenue for percent calculation
+    const totalRevenue = toursRaw.reduce((sum, t) => sum + t.revenue, 0)
+
+    // Sort, limit and map result
+    const result = toursRaw
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, limit)
+      .map((t) => ({
+        tour_id: t._id,
+        name: t.name,
+        booking_count: t.booking_count,
+        revenue: t.revenue,
+
+        percent: totalRevenue === 0 ? 0 : Number(((t.revenue / totalRevenue) * 100).toFixed(2))
+      }))
+
+    return { tours: result }
   }
 }
 
