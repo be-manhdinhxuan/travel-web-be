@@ -18,7 +18,8 @@ export const createTourController = async (req: Request<ParamsDictionary, any, C
 }
 
 export const getToursController = async (req: Request<ParamsDictionary, any, any, GetToursQuery>, res: Response) => {
-  const result = await toursService.getTours(req.query)
+  const { role } = (req.decoded_authorization as TokenPayload) || {}
+  const result = await toursService.getTours(req.query, role)
   return res.json({
     message: MESSAGES.GET_TOURS_SUCCESS,
     result
@@ -26,8 +27,8 @@ export const getToursController = async (req: Request<ParamsDictionary, any, any
 }
 
 export const getDetailTourController = async (req: Request, res: Response) => {
-  const { slug } = req.params
   const { role } = (req.decoded_authorization as TokenPayload) || {}
+  const { slug } = req.params
   const tour = await toursService.getDetailTour(slug as string, role)
   return res.json({
     message: MESSAGES.GET_DETAIL_TOUR_SUCCESS,

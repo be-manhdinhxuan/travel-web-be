@@ -51,7 +51,7 @@ class ToursService {
     }
   }
 
-  async getTours(query: GetToursQuery) {
+  async getTours(query: GetToursQuery, role: UserRole) {
     const page = Number(query.page) || 1
     const limit = Number(query.limit) || 12
     const skip = (page - 1) * limit
@@ -59,8 +59,6 @@ class ToursService {
     const keyword = query.keyword?.trim()
     const category_id = query.category_id
     const destination = query.destination?.trim()
-    const departure_from = query.departure_from
-    const departure_to = query.departure_to
     const num_adults = query.num_adults ? Number(query.num_adults) : 0
     const num_children = query.num_children ? Number(query.num_children) : 0
     const min_price = query.min_price ? Number(query.min_price) : undefined
@@ -71,10 +69,20 @@ class ToursService {
     const totalPassengers = num_adults + num_children
 
     // ====================== MATCH TOUR ======================
-    const tourMatch: any = {
-      status: TourStatus.Active
+    const tourMatch: any = {}
+
+    const currentRole = role ?? UserRole.User
+    if (currentRole === UserRole.User) {
+      tourMatch.status = TourStatus.Active
+    } else {
+      // Admin / Employee mới được filter status
+      if (query.status !== undefined) {
+        tourMatch.status = Number(query.status)
+      }
+      // không truyền status → lấy tất cả
     }
 
+    // keyword
     if (keyword) {
       tourMatch.$text = { $search: keyword }
     }
@@ -93,35 +101,48 @@ class ToursService {
       else if (duration === '6+') tourMatch.duration_days = { $gte: 6 }
     }
 
-    // ====================== MATCH SCHEDULE ======================
-    const scheduleMatch: any = {
-      status: ScheduleStatus.Available,
-      departure_date: { $gte: new Date() },
-      available_slots: { $gt: 0 }
+    // ====================== SCHEDULE FILTER ======================
+    const scheduleMatchConditions: any[] = [{ $gt: ['$$s.available_slots', 0] }]
+
+    // departure_from
+    if (query.departure_from) {
+      scheduleMatchConditions.push({
+        $gte: ['$$s.departure_date', new Date(query.departure_from)]
+      })
+    } else {
+      scheduleMatchConditions.push({
+        $gte: ['$$s.departure_date', new Date()]
+      })
     }
 
-    if (query.departure_from || query.departure_to) {
-      scheduleMatch.departure_date = {}
+    // departure_to
+    if (query.departure_to) {
+      const end = new Date(query.departure_to)
+      end.setHours(23, 59, 59, 999)
 
-      if (query.departure_from) {
-        scheduleMatch.departure_date.$gte = new Date(query.departure_from)
-      }
-
-      if (query.departure_to) {
-        const end = new Date(query.departure_to)
-        end.setHours(23, 59, 59, 999) // lấy hết ngày
-        scheduleMatch.departure_date.$lte = end
-      }
+      scheduleMatchConditions.push({
+        $lte: ['$$s.departure_date', end]
+      })
     }
 
+    // slots
     if (totalPassengers > 0) {
-      scheduleMatch.available_slots = { $gte: totalPassengers }
+      scheduleMatchConditions.push({
+        $gte: ['$$s.available_slots', totalPassengers]
+      })
     }
 
-    if (min_price || max_price) {
-      scheduleMatch.price_adult = {}
-      if (min_price !== undefined) scheduleMatch.price_adult.$gte = min_price
-      if (max_price !== undefined) scheduleMatch.price_adult.$lte = max_price
+    // price
+    if (min_price !== undefined) {
+      scheduleMatchConditions.push({
+        $gte: ['$$s.price_adult', min_price]
+      })
+    }
+
+    if (max_price !== undefined) {
+      scheduleMatchConditions.push({
+        $lte: ['$$s.price_adult', max_price]
+      })
     }
 
     // ====================== SORT ======================
@@ -151,10 +172,9 @@ class ToursService {
     }
 
     // ====================== AGGREGATION ======================
-    const pipeline: any[] = [
+    const basePipeline: any[] = [
       { $match: tourMatch },
 
-      // join schedules
       {
         $lookup: {
           from: 'schedules',
@@ -164,7 +184,6 @@ class ToursService {
         }
       },
 
-      // filter schedules
       {
         $addFields: {
           schedules: {
@@ -172,49 +191,37 @@ class ToursService {
               input: '$schedules',
               as: 's',
               cond: {
-                $and: [
-                  { $gt: ['$$s.available_slots', 0] },
-
-                  ...(query.departure_from
-                    ? [{ $gte: ['$$s.departure_date', new Date(query.departure_from)] }]
-                    : [{ $gte: ['$$s.departure_date', new Date()] }]),
-
-                  ...(query.departure_to
-                    ? [
-                        {
-                          $lte: ['$$s.departure_date', new Date(new Date(query.departure_to).setHours(23, 59, 59, 999))]
-                        }
-                      ]
-                    : [])
-                ]
+                $and: scheduleMatchConditions
               }
             }
           }
         }
       },
 
-      // loại tour không có schedule hợp lệ
-      {
-        $match: {
-          schedules: { $ne: [] }
-        }
-      },
+      ...(currentRole === UserRole.User
+        ? [
+            {
+              $match: {
+                schedules: { $ne: [] }
+              }
+            }
+          ]
+        : []),
 
-      // lấy giá rẻ nhất
       {
         $addFields: {
-          min_price: { $min: '$schedules.price_adult' }
+          min_price: {
+            $cond: [{ $gt: [{ $size: '$schedules' }, 0] }, { $min: '$schedules.price_adult' }, null]
+          }
         }
-      },
+      }
+    ]
 
-      // sort
+    const dataPipeline = [
+      ...basePipeline,
       { $sort: sortOption },
-
-      // pagination
       { $skip: skip },
       { $limit: limit },
-
-      // ẩn schedules cho nhẹ
       {
         $project: {
           schedules: 0
@@ -222,14 +229,11 @@ class ToursService {
       }
     ]
 
+    const countPipeline = [...basePipeline, { $count: 'total' }]
+
     const [tours, totalResult] = await Promise.all([
-      databaseServices.tours.aggregate(pipeline).toArray(),
-      databaseServices.tours
-        .aggregate([
-          ...pipeline.filter((p) => !('$skip' in p || '$limit' in p || '$project' in p)),
-          { $count: 'total' }
-        ])
-        .toArray()
+      databaseServices.tours.aggregate(dataPipeline).toArray(),
+      databaseServices.tours.aggregate(countPipeline).toArray()
     ])
 
     const total = totalResult[0]?.total || 0
@@ -248,7 +252,7 @@ class ToursService {
   async getDetailTour(slug: string, role: UserRole) {
     const filter: Filter<Tour> = { slug }
 
-    if (role !== UserRole.Admin) {
+    if (role !== UserRole.Admin && role !== UserRole.Employee) {
       filter.status = TourStatus.Active
     }
 

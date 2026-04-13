@@ -25,6 +25,7 @@ export interface GetToursQuery {
   page?: number
   limit?: number
   keyword?: string
+  status?: number
   category_id?: string
   destination?: string
   departure_from?: string

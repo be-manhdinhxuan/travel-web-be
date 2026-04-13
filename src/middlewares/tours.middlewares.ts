@@ -247,6 +247,14 @@ export const getToursValidator = validate(
         },
         trim: true
       },
+      status: {
+        optional: true,
+        isIn: {
+          options: [[TourStatus.Inactive, TourStatus.Active, TourStatus.Cancelled]],
+          errorMessage: MESSAGES.TOUR_STATUS_IS_INVALID
+        },
+        toInt: true
+      },
       category_id: {
         optional: true,
         custom: {

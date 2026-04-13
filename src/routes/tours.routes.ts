@@ -59,9 +59,9 @@ toursRouter.post(
  * Description: Get list of tours
  * Path: /
  * Method: GET
- * Query: { page, limit, keyword, category_id, destination, departure_date, num_adults, num_children, min_price, max_price, sort }
+ * Query: { page, limit, keyword, status, category_id, destination, departure_date, num_adults, num_children, min_price, max_price, sort }
  */
-toursRouter.get('', getToursValidator, wrapRequestHandler(getToursController))
+toursRouter.get('', optionalAccessTokenValidator, getToursValidator, wrapRequestHandler(getToursController))
 
 /**
  * Description: Get detail tour
