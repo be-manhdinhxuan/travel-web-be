@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
+import { UserRole } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
@@ -92,7 +93,8 @@ export const getMyWishlistController = async (req: Request, res: Response, next:
 }
 
 export const getUsersController = async (req: Request, res: Response, next: NextFunction) => {
-  const result = await usersService.getUsers(req.query)
+  const currentUserRole = (req.decoded_authorization as TokenPayload)?.role ?? UserRole.User
+  const result = await usersService.getUsers(req.query, currentUserRole)
   return res.json({
     message: 'Get users success',
     result

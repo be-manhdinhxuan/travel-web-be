@@ -228,23 +228,29 @@ class UsersService {
     }
   }
 
-  async getUsers(query: GetUsersReqQuery) {
+  async getUsers(query: GetUsersReqQuery, currentUserRole: UserRole) {
     const page = Number(query.page) || 1
     const limit = Number(query.limit) || 20
     const keyword = query.keyword || ''
-    const role = query.role ? Number(query.role) : null
-    const status = query.status ? Number(query.status) : null
+    const role = query.role !== undefined ? Number(query.role) : null
+    const status = query.status !== undefined ? Number(query.status) : null
 
     const skip = (page - 1) * limit
 
     const filter: any = {}
 
-    if (keyword) {
-      filter.$or = [{ full_name: { $regex: keyword, $options: 'i' } }, { email: { $regex: keyword, $options: 'i' } }]
+    if (currentUserRole === UserRole.Employee) {
+      // Employee chỉ thấy user
+      filter.role = UserRole.User
+    } else {
+      // Admin mới được filter role
+      if (role !== null) {
+        filter.role = role
+      }
     }
 
-    if (role !== null) {
-      filter.role = role
+    if (keyword) {
+      filter.$or = [{ full_name: { $regex: keyword, $options: 'i' } }, { email: { $regex: keyword, $options: 'i' } }]
     }
 
     if (status !== null) {
