@@ -5,6 +5,7 @@ import Payment from '~/models/schemas/Payment.schema'
 import { BookingStatus, PaymentProvider, PaymentStatus } from '~/constants/enums'
 import crypto from 'crypto'
 import { createVnpayPaymentUrl } from './vnpay.services'
+import emailService from './email.services'
 
 class PaymentsService {
   async createMomoPayment(booking_id: string, user_id: string) {
@@ -114,6 +115,19 @@ class PaymentsService {
           }
         }
       )
+
+      // GỬI EMAIL XÁC NHẬN
+      try {
+        const booking = await databaseServices.bookings.findOne({
+          _id: existingPayment.booking_id
+        })
+
+        if (booking) {
+          await emailService.sendBookingSuccessEmail(booking.contact_info.email, booking)
+        }
+      } catch (error) {
+        console.error('Send booking email failed:', error)
+      }
 
       // cập nhật used_count coupon nếu có
       const booking = await databaseServices.bookings.findOne({
@@ -244,6 +258,19 @@ class PaymentsService {
           }
         }
       )
+
+      // GỬI EMAIL XÁC NHẬN
+      try {
+        const booking = await databaseServices.bookings.findOne({
+          _id: existingPayment.booking_id
+        })
+
+        if (booking) {
+          await emailService.sendBookingSuccessEmail(booking.contact_info.email, booking)
+        }
+      } catch (error) {
+        console.error('Send booking email failed:', error)
+      }
 
       // cập nhật used_count coupon nếu có
       const booking = await databaseServices.bookings.findOne({
