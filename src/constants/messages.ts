@@ -257,5 +257,7 @@ export const MESSAGES = {
   PERIOD_IS_INVALID: 'Period is invalid',
   GET_STATS_SUCCESS: 'Get stats success',
   YEAR_IS_INVALID: 'Year is invalid',
-  LIMIT_MUST_BE_FROM_1_TO_20: 'Limit must be from 1 to 20'
+  LIMIT_MUST_BE_FROM_1_TO_20: 'Limit must be from 1 to 20',
+
+  GET_RECOMMENDED_TOURS_SUCCESS: 'Get recommended tours success'
 } as const

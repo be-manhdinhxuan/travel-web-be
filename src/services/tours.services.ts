@@ -4,7 +4,7 @@ import Tour from '~/models/schemas/Tour.schema'
 import { generateUniqueCategorySlug } from '~/utils/generateCategorySlug'
 import { uploadImageToCloudinary } from '~/utils/uploadImageToCloudinary'
 import databaseServices from './database.services'
-import { ScheduleStatus, TourSort, TourStatus, UserRole } from '~/constants/enums'
+import { BookingStatus, ScheduleStatus, TourSort, TourStatus, UserRole } from '~/constants/enums'
 import Schedule from '~/models/schemas/Schedule.schema'
 import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
@@ -247,6 +247,195 @@ class ToursService {
         total_pages: Math.ceil(total / limit)
       }
     }
+  }
+
+  async getRecommendedTours(user_id?: string) {
+    const now = new Date()
+
+    // Guest/User chưa login → show 10 tour mới nhất
+    if (!user_id) {
+      const tours = await databaseServices.tours
+        .aggregate([
+          {
+            $match: {
+              status: TourStatus.Active
+            }
+          },
+          {
+            $lookup: {
+              from: 'schedules',
+              localField: '_id',
+              foreignField: 'tour_id',
+              as: 'schedules'
+            }
+          },
+          {
+            $addFields: {
+              schedules: {
+                $filter: {
+                  input: '$schedules',
+                  as: 's',
+                  cond: {
+                    $and: [
+                      { $eq: ['$$s.status', ScheduleStatus.Available] },
+                      { $gte: ['$$s.departure_date', now] },
+                      { $gt: ['$$s.available_slots', 0] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            $match: { schedules: { $ne: [] } }
+          },
+          {
+            $addFields: {
+              min_price: { $min: '$schedules.price_adult' }
+            }
+          },
+          {
+            $sort: { created_at: -1 }
+          },
+          { $limit: 10 },
+          {
+            $project: {
+              schedules: 0
+            }
+          }
+        ])
+        .toArray()
+
+      return { tours }
+    }
+
+    // User đã login → show tour dựa trên lịch sử tương tác (booking history và wishlist)
+    const userObjectId = new ObjectId(user_id)
+
+    const user = await databaseServices.users.findOne({ _id: userObjectId }, { projection: { wishlist: 1 } })
+
+    const wishlistIds: ObjectId[] = user?.wishlist || []
+
+    const bookings = await databaseServices.bookings
+      .find({
+        user_id: userObjectId,
+        status: { $in: [BookingStatus.Confirmed, BookingStatus.Completed] }
+      })
+      .toArray()
+
+    // Nếu user chưa có tương tác nào → show 10 tour mới nhất
+    if (bookings.length === 0 && wishlistIds.length === 0) {
+      const tours = await databaseServices.tours
+        .aggregate([{ $match: { status: TourStatus.Active } }, { $sort: { created_at: -1 } }, { $limit: 10 }])
+        .toArray()
+
+      return { tours }
+    }
+
+    const bookedTourIds = bookings.map((b) => b.tour_snapshot?.tour_id).filter(Boolean)
+
+    const interactedTourIds = [
+      ...new Set([...bookedTourIds.map((id) => id.toString()), ...wishlistIds.map((id) => id.toString())])
+    ].map((id) => new ObjectId(id))
+
+    let preferredCategoryIds: ObjectId[] = []
+
+    if (interactedTourIds.length > 0) {
+      const interactedTours = await databaseServices.tours
+        .find({ _id: { $in: interactedTourIds } }, { projection: { category_id: 1 } })
+        .toArray()
+
+      preferredCategoryIds = [...new Set(interactedTours.map((t) => t.category_id.toString()))].map(
+        (id) => new ObjectId(id)
+      )
+    }
+
+    let avgBudget: number | null = null
+
+    if (bookings.length > 0) {
+      const total = bookings.reduce((sum, b) => sum + b.final_price, 0)
+      avgBudget = total / bookings.length
+    }
+
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(now.getDate() - 30)
+
+    const tours = await databaseServices.tours
+      .aggregate([
+        {
+          $match: {
+            status: TourStatus.Active,
+            _id: { $nin: bookedTourIds }
+          }
+        },
+        {
+          $lookup: {
+            from: 'schedules',
+            localField: '_id',
+            foreignField: 'tour_id',
+            as: 'schedules'
+          }
+        },
+        {
+          $addFields: {
+            schedules: {
+              $filter: {
+                input: '$schedules',
+                as: 's',
+                cond: {
+                  $and: [
+                    { $eq: ['$$s.status', ScheduleStatus.Available] },
+                    { $gte: ['$$s.departure_date', now] },
+                    { $gt: ['$$s.available_slots', 0] }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        { $match: { schedules: { $ne: [] } } },
+        {
+          $addFields: {
+            min_price: { $min: '$schedules.price_adult' }
+          }
+        },
+        {
+          $addFields: {
+            score: {
+              $add: [
+                {
+                  $cond: [{ $in: ['$category_id', preferredCategoryIds] }, 3, 0]
+                },
+                avgBudget
+                  ? {
+                      $cond: [
+                        {
+                          $and: [{ $gte: ['$min_price', avgBudget * 0.5] }, { $lte: ['$min_price', avgBudget * 1.5] }]
+                        },
+                        2,
+                        0
+                      ]
+                    }
+                  : 0,
+                {
+                  $cond: [{ $gte: ['$created_at', thirtyDaysAgo] }, 1, 0]
+                }
+              ]
+            }
+          }
+        },
+        { $sort: { score: -1, created_at: -1 } },
+        { $limit: 10 },
+        {
+          $project: {
+            schedules: 0,
+            score: 0
+          }
+        }
+      ])
+      .toArray()
+
+    return { tours }
   }
 
   async getDetailTour(slug: string, role: UserRole) {

@@ -5,6 +5,7 @@ import {
   createTourController,
   deleteTourController,
   getDetailTourController,
+  getRecommendedToursController,
   getToursController,
   updateTourController,
   updateTourStatusController
@@ -62,6 +63,18 @@ toursRouter.post(
  * Query: { page, limit, keyword, status, category_id, destination, departure_date, num_adults, num_children, min_price, max_price, sort }
  */
 toursRouter.get('', optionalAccessTokenValidator, getToursValidator, wrapRequestHandler(getToursController))
+
+/**
+ * Description: Get recommended tours for user
+ * Path: /recommended
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ */
+toursRouter.get(
+  '/recommended',
+  optionalAccessTokenValidator,
+  wrapRequestHandler(getRecommendedToursController)
+)
 
 /**
  * Description: Get detail tour

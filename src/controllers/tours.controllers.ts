@@ -26,6 +26,17 @@ export const getToursController = async (req: Request<ParamsDictionary, any, any
   })
 }
 
+export const getRecommendedToursController = async (req: Request, res: Response) => {
+  const user_id = req.decoded_authorization?.user_id as string | undefined
+
+  const result = await toursService.getRecommendedTours(user_id)
+
+  return res.json({
+    message: MESSAGES.GET_RECOMMENDED_TOURS_SUCCESS,
+    result
+  })
+}
+
 export const getDetailTourController = async (req: Request, res: Response) => {
   const { role } = (req.decoded_authorization as TokenPayload) || {}
   const { slug } = req.params
