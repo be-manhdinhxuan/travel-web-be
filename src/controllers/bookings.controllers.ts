@@ -1,7 +1,8 @@
 import { Request, Response } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
-import { PaymentStatus } from '~/constants/enums'
+import { PaymentStatus, UserRole } from '~/constants/enums'
 import { MESSAGES } from '~/constants/messages'
+import { TokenPayload } from '~/models/requests/Auth.requests'
 import {
   CreateBookingReqBody,
   GetBookingsQuery,
@@ -81,19 +82,17 @@ export const updateBookingStatusController = async (
   req: Request<ParamsDictionary, any, UpdateBookingStatusReqBody>,
   res: Response
 ) => {
+  const currentUserRole = (req.decoded_authorization as TokenPayload)?.role ?? UserRole.User
   const { id } = req.params
-  const result = await bookingsService.updateBookingStatus(id as string, req.body)
+  const result = await bookingsService.updateBookingStatus(id as string, req.body, currentUserRole)
   return res.json({
     message: MESSAGES.UPDATE_BOOKING_STATUS_SUCCESS,
     result
   })
 }
 
-export const confirmRefundController = async (
-  req: Request<{id: string}>,
-  res: Response
-) => {
-  const {id} = req.params
+export const confirmRefundController = async (req: Request<{ id: string }>, res: Response) => {
+  const { id } = req.params
   const result = await bookingsService.confirmRefund(id)
   return res.json({
     message: MESSAGES.CONFIRM_REFUND_SUCCESS,

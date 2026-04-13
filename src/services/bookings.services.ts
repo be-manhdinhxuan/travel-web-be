@@ -11,7 +11,7 @@ import {
 } from '~/models/requests/Booking.requests'
 import Booking from '~/models/schemas/Booking.schema'
 import { generateBookingCode } from '~/utils/generateBookingCode'
-import { BookingStatus, PaymentStatus } from '~/constants/enums'
+import { BookingStatus, PaymentStatus, UserRole } from '~/constants/enums'
 
 class BookingServices {
   async createBooking(user_id: string, payload: CreateBookingReqBody) {
@@ -437,7 +437,7 @@ class BookingServices {
     return { booking: result[0] }
   }
 
-  async updateBookingStatus(id: string, payload: UpdateBookingStatusReqBody) {
+  async updateBookingStatus(id: string, payload: UpdateBookingStatusReqBody, currentUserRole: UserRole) {
     const { status, cancelled_reason } = payload
 
     const booking = (await databaseServices.bookings.findOne({
@@ -454,7 +454,15 @@ class BookingServices {
 
     let paymentStatus: PaymentStatus | null = null
 
-    // Cancelled flow
+    // Role check
+    if (status === BookingStatus.Cancelled && currentUserRole !== UserRole.Admin) {
+      throw new ErrorWithStatus({
+        message: 'Only admin can cancel booking',
+        status: HTTP_STATUS.FORBIDDEN
+      })
+    }
+
+    // Cancel flow - chỉ admin mới được cancel và mới có logic hoàn slot + refund
     if (status === BookingStatus.Cancelled) {
       if (!cancelled_reason) {
         throw new ErrorWithStatus({
@@ -481,7 +489,6 @@ class BookingServices {
       )
 
       if (payment) {
-        // update sang refund_pending
         await databaseServices.payments.updateOne(
           { _id: payment._id },
           {
@@ -496,7 +503,7 @@ class BookingServices {
       }
     }
 
-    // Nếu update sang completed thì phải check đã qua ngày return_date chưa, chưa thì không cho update
+    // Completed flow - kiểm tra tour đã kết thúc chưa, nếu chưa thì không cho update
     if (status === BookingStatus.Completed) {
       const returnDate = new Date(booking.tour_snapshot.return_date)
 
@@ -508,7 +515,7 @@ class BookingServices {
       }
     }
 
-    // Cập nhật trạng thái booking
+    // Update trạng thái booking
     const updatedBooking = await databaseServices.bookings.findOneAndUpdate(
       { _id: new ObjectId(id) },
       {
@@ -521,7 +528,7 @@ class BookingServices {
       { returnDocument: 'after' }
     )
 
-    // Nếu booking bị cancelled ở trên thì đã có paymentStatus, còn nếu update bình thường sang confirmed/completed thì phải lấy payment status mới nhất
+    // Payment status
     if (paymentStatus === null) {
       const latestPayment = await databaseServices.payments.findOne(
         { booking_id: booking._id },
