@@ -22,15 +22,7 @@ const port = process.env.PORT || 5000
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      const allowed = ['http://localhost:3000', 'http://localhost:5173', process.env.CLIENT_URL]
-
-      if (!origin || allowed.includes(origin)) {
-        callback(null, true)
-      } else {
-        callback(new Error('Not allowed by CORS'))
-      }
-    },
+    origin: true,
     credentials: true
   })
 )
