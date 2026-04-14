@@ -20,8 +20,27 @@ bookingExpiryJob.start()
 const app = express()
 const port = process.env.PORT || 5000
 
-app.use(cors())
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowed = ['http://localhost:3000', 'http://localhost:5173', process.env.CLIENT_URL]
+
+      if (!origin || allowed.includes(origin)) {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
+    credentials: true
+  })
+)
+
 app.use(express.json())
+
+app.get('/health', (req, res) => {
+  res.status(200).send('OK')
+})
+
 // Auth
 app.use('/api/auths', authsRouter)
 
