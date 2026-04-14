@@ -42,12 +42,10 @@ export const updateScheduleController = async (
   })
 }
 
-export const deleteScheduleController = async (
-  req: Request,
-  res: Response) => {
-    const { id } = req.params
-    await schedulesService.deleteSchedule(id as string)
-    return res.json({
-      message: MESSAGES.DELETE_SCHEDULE_SUCCESS
-    })
-  }
+export const deleteScheduleController = async (req: Request, res: Response) => {
+  const { id } = req.params
+  await schedulesService.deleteSchedule(id as string)
+  return res.json({
+    message: MESSAGES.DELETE_SCHEDULE_SUCCESS
+  })
+}

@@ -13,7 +13,8 @@ import { BookingStatus } from '~/constants/enums'
 
 class CouponsService {
   async getPublicCoupons(params: { page?: number; limit?: number; keyword?: string }) {
-    let { page = 1, limit = 10, keyword = '' } = params
+    let { page = 1, limit = 10 } = params
+    const keyword = params.keyword?.trim() || ''
 
     page = Number(page) || 1
     limit = Number(limit) || 10

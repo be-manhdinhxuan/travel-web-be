@@ -103,7 +103,6 @@ class SchedulesService {
     }
 
     await databaseServices.schedules.deleteOne({ _id: new ObjectId(id) })
-
   }
 }
 

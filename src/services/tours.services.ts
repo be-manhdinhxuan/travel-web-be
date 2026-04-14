@@ -146,30 +146,16 @@ class ToursService {
     }
 
     // ====================== SORT ======================
-    let sortOption: any = { created_at: -1 }
-
-    switch (sort) {
-      case 'name_asc':
-        sortOption = { name: 1, created_at: -1 }
-        break
-      case 'name_desc':
-        sortOption = { name: -1, created_at: -1 }
-        break
-      case 'duration_asc':
-        sortOption = { duration_days: 1, created_at: -1 }
-        break
-      case 'duration_desc':
-        sortOption = { duration_days: -1, created_at: -1 }
-        break
-      case 'price_asc':
-        sortOption = { min_price: 1, created_at: -1 }
-        break
-      case 'price_desc':
-        sortOption = { min_price: -1, created_at: -1 }
-        break
-      default:
-        sortOption = { created_at: -1 }
+    const sortMap: Record<string, any> = {
+      name_asc: { name: 1, created_at: -1 },
+      name_desc: { name: -1, created_at: -1 },
+      duration_asc: { duration_days: 1, created_at: -1 },
+      duration_desc: { duration_days: -1, created_at: -1 },
+      price_asc: { min_price: 1, created_at: -1 },
+      price_desc: { min_price: -1, created_at: -1 }
     }
+
+    const sortOption = sortMap[sort] || { created_at: -1 }
 
     // ====================== AGGREGATION ======================
     const basePipeline: any[] = [

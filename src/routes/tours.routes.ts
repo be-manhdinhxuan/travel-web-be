@@ -70,11 +70,7 @@ toursRouter.get('', optionalAccessTokenValidator, getToursValidator, wrapRequest
  * Method: GET
  * Header: { Authorization: Bearer <access_token> }
  */
-toursRouter.get(
-  '/recommended',
-  optionalAccessTokenValidator,
-  wrapRequestHandler(getRecommendedToursController)
-)
+toursRouter.get('/recommended', optionalAccessTokenValidator, wrapRequestHandler(getRecommendedToursController))
 
 /**
  * Description: Get detail tour
