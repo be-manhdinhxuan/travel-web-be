@@ -1,5 +1,6 @@
+import 'dotenv/config'
+
 import express from 'express'
-import { config } from 'dotenv'
 import databaseService from './services/database.services'
 import authsRouter from './routes/auths.routes'
 import { defaultErrorHandler } from './middlewares/error.middlerwares'
@@ -14,7 +15,6 @@ import bookingExpiryJob from './jobs/booking-expiry.job'
 import couponsRouter from './routes/coupons.routes'
 import statsRouter from './routes/stats.routes'
 
-config()
 databaseService.connect()
 bookingExpiryJob.start()
 const app = express()

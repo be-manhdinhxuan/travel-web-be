@@ -1,7 +1,4 @@
 import crypto from 'crypto'
-import { config } from 'dotenv'
-
-config()
 
 const { VNPAY_TMN_CODE, VNPAY_HASH_SECRET, VNPAY_URL, VNPAY_RETURN_URL } = process.env
 

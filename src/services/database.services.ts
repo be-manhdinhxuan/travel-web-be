@@ -1,4 +1,3 @@
-import { config } from 'dotenv'
 import { MongoClient, Db, Collection } from 'mongodb'
 import Booking from '~/models/schemas/Booking.schema'
 import Category from '~/models/schemas/Category.schema'
@@ -9,14 +8,11 @@ import Schedule from '~/models/schemas/Schedule.schema'
 import Tour from '~/models/schemas/Tour.schema'
 import User from '~/models/schemas/User.schema'
 
-config()
-
-const uri = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@ac-oq6ks1i-shard-00-00.7e69wir.mongodb.net:27017,ac-oq6ks1i-shard-00-01.7e69wir.mongodb.net:27017,ac-oq6ks1i-shard-00-02.7e69wir.mongodb.net:27017/?ssl=true&replicaSet=atlas-a3klcx-shard-0&authSource=admin&appName=Cluster-TravelWeb`
-
 class DatabaseService {
   private client: MongoClient
   private db: Db
   constructor() {
+    const uri = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@ac-oq6ks1i-shard-00-00.7e69wir.mongodb.net:27017,ac-oq6ks1i-shard-00-01.7e69wir.mongodb.net:27017,ac-oq6ks1i-shard-00-02.7e69wir.mongodb.net:27017/?ssl=true&replicaSet=atlas-a3klcx-shard-0&authSource=admin&appName=Cluster-TravelWeb`
     this.client = new MongoClient(uri)
     this.db = this.client.db(process.env.DB_NAME)
   }
@@ -66,8 +62,6 @@ class DatabaseService {
     await this.coupons.createIndex({ code: 1 }, { unique: true })
     await this.coupons.createIndex({ is_active: 1 })
     await this.coupons.createIndex({ expires_at: 1 })
-
-    console.log('Indexes created successfully')
   }
 
   async connect() {

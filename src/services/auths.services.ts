@@ -1,4 +1,3 @@
-import { config } from 'dotenv'
 import { TokenType, UserRole, UserStatus, UserVerifyStatus } from '~/constants/enums'
 import User from '~/models/schemas/User.schema'
 import { signToken } from '~/utils/jwt'
@@ -12,8 +11,6 @@ import emailService from './email.services'
 import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
-
-config()
 
 class AuthService {
   private signAccessToken({

@@ -1,8 +1,5 @@
 import axios from 'axios'
 import crypto from 'crypto'
-import { config } from 'dotenv'
-
-config()
 
 const { MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY, MOMO_ENDPOINT, MOMO_REDIRECT_URL, MOMO_IPN_URL } =
   process.env
