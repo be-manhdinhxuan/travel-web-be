@@ -102,7 +102,14 @@ class ToursService {
     }
 
     // ====================== SCHEDULE FILTER ======================
-    const scheduleMatchConditions: any[] = [{ $gt: ['$$s.available_slots', 0] }]
+    const scheduleMatchConditions: any[] = [
+      {
+        $in: ['$$s.status', [ScheduleStatus.Available, ScheduleStatus.Full]]
+      },
+      {
+        $gte: ['$$s.departure_date', new Date()]
+      }
+    ]
 
     // departure_from
     if (query.departure_from) {
@@ -188,7 +195,7 @@ class ToursService {
         ? [
             {
               $match: {
-                schedules: { $ne: [] }
+                schedules: { $ne: [] } // 👈 CHẶN TOUR KHÔNG CÓ LỊCH
               }
             }
           ]
@@ -427,7 +434,9 @@ class ToursService {
   async getDetailTour(slug: string, role: UserRole) {
     const filter: Filter<Tour> = { slug }
 
-    if (role !== UserRole.Admin && role !== UserRole.Employee) {
+    const isPrivileged = role === UserRole.Admin || role === UserRole.Employee
+
+    if (!isPrivileged) {
       filter.status = TourStatus.Active
     }
 
@@ -440,16 +449,30 @@ class ToursService {
       })
     }
 
-    const schedules = await databaseServices.schedules
-      .find({
-        tour_id: tour._id,
-        status: { $in: [ScheduleStatus.Available, ScheduleStatus.Full] },
-        departure_date: { $gte: new Date() }
-      })
-      .sort({ price_adult: 1 })
-      .toArray()
+    let scheduleFilter: any = {
+      tour_id: tour._id
+    }
 
-    // lấy giá rẻ nhất từ schedule có giá người lớn thấp nhất
+    if (!isPrivileged) {
+      scheduleFilter = {
+        ...scheduleFilter,
+        status: {
+          $in: [ScheduleStatus.Available, ScheduleStatus.Full]
+        },
+        departure_date: { $gte: new Date() }
+      }
+    }
+
+    const schedules = await databaseServices.schedules.find(scheduleFilter).sort({ price_adult: 1 }).toArray()
+
+    // CHẶN USER TRUY CẬP TOUR KHÔNG CÓ LỊCH
+    if (!isPrivileged && schedules.length === 0) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.TOUR_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
     const min_price = schedules.length > 0 ? schedules[0].price_adult : null
 
     return { tour, schedules, min_price }
