@@ -21,7 +21,7 @@ price_adult (number)
 price_child (number)
 price_baby (number)
 total_slots (number)
-status (number, 0: available, 1: full, 2: cancelled)
+status (number, 0: available, 1: full, 2: cancelled, 3: expired)
 note (string)
  */
 schedulesRouter.put(

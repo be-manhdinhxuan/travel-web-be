@@ -23,7 +23,8 @@ export enum TourStatus {
 export enum ScheduleStatus {
   Cancelled, // = 0
   Available, // = 1
-  Full // = 2
+  Full, // = 2
+  Expired // = 3
 }
 
 export enum BookingStatus {

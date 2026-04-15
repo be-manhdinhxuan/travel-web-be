@@ -1,7 +1,7 @@
 import cron from 'node-cron'
 import { ObjectId } from 'mongodb'
 import databaseServices from '~/services/database.services'
-import { BookingStatus, PaymentStatus } from '~/constants/enums'
+import { BookingStatus, PaymentStatus, ScheduleStatus } from '~/constants/enums'
 
 const cancelExpiredBookings = async () => {
   const expiredTime = new Date(Date.now() - 15 * 60 * 1000)
@@ -69,10 +69,28 @@ const completeExpiredBookings = async () => {
   )
 }
 
-// chạy mỗi 5 phút
-const bookingExpiryJob = cron.schedule('*/5 * * * *', cancelExpiredBookings)
+const updateExpiredSchedules = async () => {
+  // Schedule đã qua departure_date → chuyển sang Expired
+  await databaseServices.schedules.updateMany(
+    {
+      departure_date: { $lt: new Date() },
+      status: { $in: [ScheduleStatus.Available, ScheduleStatus.Full] }
+    },
+    {
+      $set: {
+        status: ScheduleStatus.Expired,
+        updated_at: new Date()
+      }
+    }
+  )
+}
+
+cron.schedule('0 0 * * *', updateExpiredSchedules) // chạy mỗi ngày 00:00
 
 // Chạy mỗi ngày lúc 00:00
 cron.schedule('0 0 * * *', completeExpiredBookings)
+
+// chạy mỗi 5 phút
+const bookingExpiryJob = cron.schedule('*/5 * * * *', cancelExpiredBookings)
 
 export default bookingExpiryJob
