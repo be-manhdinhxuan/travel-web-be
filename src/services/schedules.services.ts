@@ -57,32 +57,85 @@ class SchedulesService {
   }
 
   async updateSchedule(id: string, payload: UpdateScheduleReqBody) {
-    const { departure_date, return_date, ...rest } = payload
+    const scheduleId = new ObjectId(id)
+    const now = new Date()
 
-    const updateData: Partial<Schedule> = {
-      ...rest,
-      ...(departure_date && { departure_date: new Date(departure_date) }),
-      ...(return_date && { return_date: new Date(return_date) }),
-      updated_at: new Date()
+    const schedule = await databaseServices.schedules.findOne({
+      _id: scheduleId
+    })
+
+    if (!schedule) {
+      throw new ErrorWithStatus({
+        message: 'Schedule not found',
+        status: HTTP_STATUS.NOT_FOUND
+      })
     }
 
-    // không cho giảm total_slots xuống dưới số đã đặt
-    if (payload.total_slots) {
-      const schedule = await databaseServices.schedules.findOne({
-        _id: new ObjectId(id)
+    // ====================== 1. CHẶN SCHEDULE KHÔNG HỢP LỆ ======================
+    if (schedule.status === ScheduleStatus.Expired || schedule.status === ScheduleStatus.Cancelled) {
+      throw new ErrorWithStatus({
+        message: 'Cannot update expired or cancelled schedule',
+        status: HTTP_STATUS.BAD_REQUEST
       })
-      const booked = schedule!.total_slots - schedule!.available_slots
+    }
+
+    // ====================== 2. XỬ LÝ DATE ======================
+    let newDeparture = schedule.departure_date
+    let newReturn = schedule.return_date
+
+    if (payload.departure_date) {
+      newDeparture = new Date(payload.departure_date)
+    }
+
+    if (payload.return_date) {
+      newReturn = new Date(payload.return_date)
+    }
+
+    // validate date logic
+    if (newDeparture >= newReturn) {
+      throw new ErrorWithStatus({
+        message: 'Departure date must be before return date',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // không cho sửa về quá khứ
+    if (newDeparture < now) {
+      throw new ErrorWithStatus({
+        message: 'Departure date cannot be in the past',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // ====================== 3. XỬ LÝ SLOTS ======================
+    const updateData: Partial<Schedule> = {
+      ...payload,
+      departure_date: newDeparture,
+      return_date: newReturn,
+      updated_at: now
+    }
+
+    if (payload.total_slots !== undefined) {
+      const booked = schedule.total_slots - schedule.available_slots
+
       if (payload.total_slots < booked) {
         throw new ErrorWithStatus({
           message: MESSAGES.TOTAL_SLOTS_CANNOT_BE_LESS_THAN_BOOKED,
           status: HTTP_STATUS.BAD_REQUEST
         })
       }
+
       updateData.available_slots = payload.total_slots - booked
     }
 
+    // ====================== 4. AUTO UPDATE STATUS ======================
+    if (newDeparture < now) {
+      updateData.status = ScheduleStatus.Expired
+    }
+
+    // ====================== 5. UPDATE ======================
     const updatedSchedule = await databaseServices.schedules.findOneAndUpdate(
-      { _id: new ObjectId(id) },
+      { _id: scheduleId },
       { $set: updateData },
       { returnDocument: 'after' }
     )

@@ -11,55 +11,96 @@ import {
 } from '~/models/requests/Booking.requests'
 import Booking from '~/models/schemas/Booking.schema'
 import { generateBookingCode } from '~/utils/generateBookingCode'
-import { BookingStatus, PaymentStatus, UserRole } from '~/constants/enums'
+import { BookingStatus, PaymentStatus, ScheduleStatus, TourStatus, UserRole } from '~/constants/enums'
 
 class BookingServices {
   async createBooking(user_id: string, payload: CreateBookingReqBody) {
     const { schedule_id, passengers, coupon_code, contact_info } = payload
 
-    // Lấy schedule và tour
+    const scheduleObjectId = new ObjectId(schedule_id)
+
+    // ====================== 1. LẤY SCHEDULE ======================
     const schedule = await databaseServices.schedules.findOne({
-      _id: new ObjectId(schedule_id)
+      _id: scheduleObjectId
     })
 
-    const tour = await databaseServices.tours.findOne({
-      _id: schedule!.tour_id
-    })
+    if (!schedule) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.SCHEDULE_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
 
-    // Kiểm tra số chỗ còn đủ không
+    // ====================== 2. VALIDATE SCHEDULE ======================
+    const now = new Date()
+
+    if (schedule.status !== ScheduleStatus.Available && schedule.status !== ScheduleStatus.Full) {
+      throw new ErrorWithStatus({
+        message: 'Schedule is not available for booking',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    if (new Date(schedule.departure_date) < now) {
+      throw new ErrorWithStatus({
+        message: 'Schedule has expired',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // ====================== 3. TÍNH SỐ KHÁCH ======================
     const totalPassengers = (passengers.adults || 0) + (passengers.children || 0) + (passengers.babies || 0)
 
-    if (schedule!.available_slots < totalPassengers) {
+    if (totalPassengers <= 0) {
       throw new ErrorWithStatus({
-        message: MESSAGES.SCHEDULE_NOT_ENOUGH_SLOTS,
-        status: HTTP_STATUS.CONFLICT
+        message: 'Total passengers must be greater than 0',
+        status: HTTP_STATUS.BAD_REQUEST
       })
     }
 
-    // Giữ chỗ ngay bằng $inc atomic
-    const updated = await databaseServices.schedules.findOneAndUpdate(
+    // ====================== 4. GIỮ CHỖ (ATOMIC) ======================
+    const updatedSchedule = await databaseServices.schedules.findOneAndUpdate(
       {
-        _id: new ObjectId(schedule_id),
-        available_slots: { $gte: totalPassengers } // double check tránh race condition
+        _id: scheduleObjectId,
+        available_slots: { $gte: totalPassengers },
+        status: { $in: [ScheduleStatus.Available, ScheduleStatus.Full] },
+        departure_date: { $gte: now }
       },
-      { $inc: { available_slots: -totalPassengers } },
-      { returnDocument: 'after' }
+      {
+        $inc: { available_slots: -totalPassengers }
+      },
+      {
+        returnDocument: 'after'
+      }
     )
 
-    if (!updated) {
+    if (!updatedSchedule) {
       throw new ErrorWithStatus({
         message: MESSAGES.SCHEDULE_NOT_ENOUGH_SLOTS,
         status: HTTP_STATUS.CONFLICT
       })
     }
 
-    // Tính giá
-    const adult_total = schedule!.price_adult * (passengers.adults || 0)
-    const child_total = schedule!.price_child * (passengers.children || 0)
-    const baby_total = schedule!.price_baby * (passengers.babies || 0)
+    // ====================== 5. LẤY TOUR ======================
+    const tour = await databaseServices.tours.findOne({
+      _id: updatedSchedule.tour_id
+    })
+
+    if (!tour || tour.status !== TourStatus.Active) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.TOUR_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // ====================== 6. TÍNH GIÁ ======================
+    const adult_total = updatedSchedule.price_adult * (passengers.adults || 0)
+    const child_total = updatedSchedule.price_child * (passengers.children || 0)
+    const baby_total = updatedSchedule.price_baby * (passengers.babies || 0)
+
     const total_price = adult_total + child_total + baby_total
 
-    // Validate coupon nếu có
+    // ====================== 7. COUPON ======================
     let discount_amount = 0
     let coupon_id = null
     let coupon_code_used = ''
@@ -68,7 +109,7 @@ class BookingServices {
       const coupon = await databaseServices.coupons.findOne({
         code: coupon_code.toUpperCase(),
         is_active: true,
-        expires_at: { $gte: new Date() },
+        expires_at: { $gte: now },
         $expr: { $lt: ['$used_count', '$max_usage'] }
       })
 
@@ -87,6 +128,7 @@ class BookingServices {
       }
 
       const alreadyUsed = coupon.used_by.some((id) => id.toString() === user_id)
+
       if (alreadyUsed) {
         throw new ErrorWithStatus({
           message: MESSAGES.COUPON_ALREADY_USED,
@@ -101,31 +143,35 @@ class BookingServices {
 
     const final_price = Math.max(0, total_price - discount_amount)
 
-    // Tạo booking_code
+    // ====================== 8. BOOKING CODE ======================
     const booking_code = await generateBookingCode()
 
-    // Tạo booking
+    // ====================== 9. TẠO BOOKING ======================
     const booking = new Booking({
       booking_code,
       user_id: new ObjectId(user_id),
-      schedule_id: new ObjectId(schedule_id),
+      schedule_id: scheduleObjectId,
       coupon_id,
+
       tour_snapshot: {
-        tour_id: tour!._id as ObjectId,
-        tour_name: tour!.name,
-        schedule_id: new ObjectId(schedule_id),
-        departure_date: schedule!.departure_date,
-        return_date: schedule!.return_date,
-        price_adult: schedule!.price_adult,
-        price_child: schedule!.price_child,
-        price_baby: schedule!.price_baby
+        tour_id: tour._id as ObjectId,
+        tour_name: tour.name,
+        schedule_id: scheduleObjectId,
+        departure_date: updatedSchedule.departure_date,
+        return_date: updatedSchedule.return_date,
+        price_adult: updatedSchedule.price_adult,
+        price_child: updatedSchedule.price_child,
+        price_baby: updatedSchedule.price_baby
       },
+
       passengers: {
         adults: passengers.adults || 0,
         children: passengers.children || 0,
         babies: passengers.babies || 0
       },
+
       contact_info,
+
       price_detail: {
         adult_count: passengers.adults || 0,
         child_count: passengers.children || 0,
@@ -136,6 +182,7 @@ class BookingServices {
         discount_amount,
         coupon_code: coupon_code_used
       },
+
       total_price,
       final_price
     })
