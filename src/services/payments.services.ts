@@ -13,6 +13,25 @@ class PaymentsService {
       _id: new ObjectId(booking_id)
     })
 
+    // check booking hợp lệ
+    if (!booking || booking.status !== BookingStatus.Pending) {
+      throw new Error('Booking is not available for payment')
+    }
+
+    // tránh duplicate payment
+    await databaseServices.payments.updateMany(
+      {
+        booking_id: new ObjectId(booking_id),
+        status: PaymentStatus.Pending
+      },
+      {
+        $set: {
+          status: PaymentStatus.Failed,
+          updated_at: new Date()
+        }
+      }
+    )
+
     // tạo order_id unique
     const order_id = `${booking_id}-${Date.now()}`
     const order_info = `Thanh toán ${booking!.tour_snapshot.tour_name} - Mã đặt tour: ${booking!.booking_code}`
@@ -77,7 +96,7 @@ class PaymentsService {
 
     if (signature !== expectedSignature) {
       console.log('MoMo IPN: chữ ký không hợp lệ')
-      return
+      return { resultCode: 0, message: 'OK' }
     }
 
     // 2. Kiểm tra idempotent — tránh xử lý 2 lần
@@ -87,12 +106,49 @@ class PaymentsService {
 
     if (!existingPayment || existingPayment.status !== PaymentStatus.Pending) {
       console.log('MoMo IPN: payment không tồn tại hoặc đã xử lý')
-      return
+      return { resultCode: 0, message: 'OK' }
     }
 
     // 3. Xử lý theo resultCode
     if (resultCode === 0) {
-      // thanh toán thành công
+      // LẤY BOOKING TRƯỚC
+      const booking = await databaseServices.bookings.findOne({
+        _id: existingPayment.booking_id
+      })
+
+      if (!booking) {
+        console.log('Booking not found')
+        return { resultCode: 0, message: 'OK' }
+      }
+
+      if (booking.status !== BookingStatus.Pending) {
+        console.log('Booking is not pending (maybe expired)')
+
+        // vẫn update payment để lưu log
+        await databaseServices.payments.updateOne(
+          { provider_order_id: orderId },
+          {
+            $set: {
+              status: PaymentStatus.Success,
+              transaction_id: transId.toString(),
+              raw_response: payload,
+              paid_at: new Date(),
+              updated_at: new Date(),
+              note: 'Paid after booking expired'
+            }
+          }
+        )
+
+        return { resultCode: 0, message: 'OK' } // DỪNG, KHÔNG confirm booking
+      }
+
+      // OPTIONAL: check amount (nên có)
+      if (Number(amount) !== existingPayment.amount) {
+        console.log('Invalid amount')
+        return { resultCode: 0, message: 'OK' }
+      }
+
+      // OK → CONFIRM
       await databaseServices.payments.updateOne(
         { provider_order_id: orderId },
         {
@@ -116,24 +172,14 @@ class PaymentsService {
         }
       )
 
-      // GỬI EMAIL XÁC NHẬN
+      // GỬI EMAIL
       try {
-        const booking = await databaseServices.bookings.findOne({
-          _id: existingPayment.booking_id
-        })
-
-        if (booking) {
-          await emailService.sendBookingSuccessEmail(booking.contact_info.email, booking)
-        }
+        await emailService.sendBookingSuccessEmail(booking.contact_info.email, booking)
       } catch (error) {
         console.error('Send booking email failed:', error)
       }
 
-      // cập nhật used_count coupon nếu có
-      const booking = await databaseServices.bookings.findOne({
-        _id: existingPayment.booking_id
-      })
-
+      // cập nhật coupon
       if (booking?.coupon_id) {
         await databaseServices.coupons.updateOne(
           { _id: booking.coupon_id },
@@ -156,12 +202,30 @@ class PaymentsService {
         }
       )
     }
+    return { resultCode: 0, message: 'OK' }
   }
 
   async createVnpayPayment(booking_id: string, user_id: string, ip_addr: string) {
     const booking = await databaseServices.bookings.findOne({
       _id: new ObjectId(booking_id)
     })
+
+    if (!booking || booking.status !== BookingStatus.Pending) {
+      throw new Error('Booking is not available for payment')
+    }
+
+    await databaseServices.payments.updateMany(
+      {
+        booking_id: new ObjectId(booking_id),
+        status: PaymentStatus.Pending
+      },
+      {
+        $set: {
+          status: PaymentStatus.Failed,
+          updated_at: new Date()
+        }
+      }
+    )
 
     const order_id = `${booking_id}-${Date.now()}`
     const order_info = `Thanh toan ${booking!.tour_snapshot.tour_name} - Ma dat tour: ${booking!.booking_code}`
@@ -235,7 +299,34 @@ class PaymentsService {
     const responseCode = vnpParams['vnp_ResponseCode']
 
     if (responseCode === '00') {
-      // thanh toán thành công
+      const booking = await databaseServices.bookings.findOne({
+        _id: existingPayment.booking_id
+      })
+
+      if (!booking) {
+        return { RspCode: '01', Message: 'Booking not found' }
+      }
+
+      // 🔥 FIX QUAN TRỌNG
+      if (booking.status !== BookingStatus.Pending) {
+        await databaseServices.payments.updateOne(
+          { provider_order_id: orderId },
+          {
+            $set: {
+              status: PaymentStatus.Success,
+              transaction_id: vnpParams['vnp_TransactionNo'],
+              raw_response: vnpParams,
+              paid_at: new Date(),
+              updated_at: new Date(),
+              note: 'Paid after booking expired'
+            }
+          }
+        )
+
+        return { RspCode: '00', Message: 'OK' }
+      }
+
+      // ✅ CONFIRM
       await databaseServices.payments.updateOne(
         { provider_order_id: orderId },
         {
@@ -259,23 +350,11 @@ class PaymentsService {
         }
       )
 
-      // GỬI EMAIL XÁC NHẬN
       try {
-        const booking = await databaseServices.bookings.findOne({
-          _id: existingPayment.booking_id
-        })
-
-        if (booking) {
-          await emailService.sendBookingSuccessEmail(booking.contact_info.email, booking)
-        }
+        await emailService.sendBookingSuccessEmail(booking.contact_info.email, booking)
       } catch (error) {
         console.error('Send booking email failed:', error)
       }
-
-      // cập nhật used_count coupon nếu có
-      const booking = await databaseServices.bookings.findOne({
-        _id: existingPayment.booking_id
-      })
 
       if (booking?.coupon_id) {
         await databaseServices.coupons.updateOne(
