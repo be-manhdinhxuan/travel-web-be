@@ -18,8 +18,34 @@ class BookingServices {
     const { schedule_id, passengers, coupon_code, contact_info } = payload
 
     const scheduleObjectId = new ObjectId(schedule_id)
+    const userObjectId = new ObjectId(user_id)
+    const now = new Date()
 
-    // ====================== 1. LẤY SCHEDULE ======================
+    // ====================== 1. VALIDATE PASSENGERS ======================
+    const totalPassengers = (passengers.adults || 0) + (passengers.children || 0) + (passengers.babies || 0)
+
+    if (totalPassengers <= 0) {
+      throw new ErrorWithStatus({
+        message: 'Total passengers must be greater than 0',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // ====================== 2. CHECK DUPLICATE BOOKING ======================
+    const existingBooking = await databaseServices.bookings.findOne({
+      user_id: userObjectId,
+      schedule_id: scheduleObjectId,
+      status: { $in: [BookingStatus.Pending, BookingStatus.Confirmed] }
+    })
+
+    if (existingBooking) {
+      throw new ErrorWithStatus({
+        message: 'You already have a booking for this schedule',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // ====================== 3. LẤY SCHEDULE ======================
     const schedule = await databaseServices.schedules.findOne({
       _id: scheduleObjectId
     })
@@ -31,10 +57,8 @@ class BookingServices {
       })
     }
 
-    // ====================== 2. VALIDATE SCHEDULE ======================
-    const now = new Date()
-
-    if (schedule.status !== ScheduleStatus.Available && schedule.status !== ScheduleStatus.Full) {
+    // ====================== 4. VALIDATE SCHEDULE ======================
+    if (schedule.status !== ScheduleStatus.Available) {
       throw new ErrorWithStatus({
         message: 'Schedule is not available for booking',
         status: HTTP_STATUS.BAD_REQUEST
@@ -48,22 +72,12 @@ class BookingServices {
       })
     }
 
-    // ====================== 3. TÍNH SỐ KHÁCH ======================
-    const totalPassengers = (passengers.adults || 0) + (passengers.children || 0) + (passengers.babies || 0)
-
-    if (totalPassengers <= 0) {
-      throw new ErrorWithStatus({
-        message: 'Total passengers must be greater than 0',
-        status: HTTP_STATUS.BAD_REQUEST
-      })
-    }
-
-    // ====================== 4. GIỮ CHỖ (ATOMIC) ======================
+    // ====================== 5. GIỮ SLOT (ATOMIC) ======================
     const updatedSchedule = await databaseServices.schedules.findOneAndUpdate(
       {
         _id: scheduleObjectId,
         available_slots: { $gte: totalPassengers },
-        status: { $in: [ScheduleStatus.Available, ScheduleStatus.Full] },
+        status: ScheduleStatus.Available,
         departure_date: { $gte: now }
       },
       {
@@ -81,116 +95,129 @@ class BookingServices {
       })
     }
 
-    // ====================== 5. LẤY TOUR ======================
-    const tour = await databaseServices.tours.findOne({
-      _id: updatedSchedule.tour_id
-    })
-
-    if (!tour || tour.status !== TourStatus.Active) {
-      throw new ErrorWithStatus({
-        message: MESSAGES.TOUR_NOT_FOUND,
-        status: HTTP_STATUS.NOT_FOUND
-      })
-    }
-
-    // ====================== 6. TÍNH GIÁ ======================
-    const adult_total = updatedSchedule.price_adult * (passengers.adults || 0)
-    const child_total = updatedSchedule.price_child * (passengers.children || 0)
-    const baby_total = updatedSchedule.price_baby * (passengers.babies || 0)
-
-    const total_price = adult_total + child_total + baby_total
-
-    // ====================== 7. COUPON ======================
-    let discount_amount = 0
-    let coupon_id = null
-    let coupon_code_used = ''
-
-    if (coupon_code) {
-      const coupon = await databaseServices.coupons.findOne({
-        code: coupon_code.toUpperCase(),
-        is_active: true,
-        expires_at: { $gte: now },
-        $expr: { $lt: ['$used_count', '$max_usage'] }
+    // ====================== TRY FLOW (ROLLBACK nếu lỗi) ======================
+    try {
+      // ====================== 6. LẤY TOUR ======================
+      const tour = await databaseServices.tours.findOne({
+        _id: updatedSchedule.tour_id
       })
 
-      if (!coupon) {
+      if (!tour || tour.status !== TourStatus.Active) {
         throw new ErrorWithStatus({
-          message: MESSAGES.COUPON_INVALID,
-          status: HTTP_STATUS.BAD_REQUEST
+          message: MESSAGES.TOUR_NOT_FOUND,
+          status: HTTP_STATUS.NOT_FOUND
         })
       }
 
-      if (total_price < coupon.min_order_value) {
-        throw new ErrorWithStatus({
-          message: MESSAGES.COUPON_MIN_ORDER_NOT_MET,
-          status: HTTP_STATUS.BAD_REQUEST
+      // ====================== 7. TÍNH GIÁ ======================
+      const adult_total = updatedSchedule.price_adult * (passengers.adults || 0)
+      const child_total = updatedSchedule.price_child * (passengers.children || 0)
+      const baby_total = updatedSchedule.price_baby * (passengers.babies || 0)
+
+      const total_price = adult_total + child_total + baby_total
+
+      // ====================== 8. COUPON ======================
+      let discount_amount = 0
+      let coupon_id = null
+      let coupon_code_used = ''
+
+      if (coupon_code) {
+        const coupon = await databaseServices.coupons.findOne({
+          code: coupon_code.toUpperCase(),
+          is_active: true,
+          expires_at: { $gte: now },
+          $expr: { $lt: ['$used_count', '$max_usage'] }
         })
+
+        if (!coupon) {
+          throw new ErrorWithStatus({
+            message: MESSAGES.COUPON_INVALID,
+            status: HTTP_STATUS.BAD_REQUEST
+          })
+        }
+
+        if (total_price < coupon.min_order_value) {
+          throw new ErrorWithStatus({
+            message: MESSAGES.COUPON_MIN_ORDER_NOT_MET,
+            status: HTTP_STATUS.BAD_REQUEST
+          })
+        }
+
+        const alreadyUsed = coupon.used_by.some((id) => id.toString() === user_id)
+
+        if (alreadyUsed) {
+          throw new ErrorWithStatus({
+            message: MESSAGES.COUPON_ALREADY_USED,
+            status: HTTP_STATUS.BAD_REQUEST
+          })
+        }
+
+        discount_amount = coupon.value
+        coupon_id = coupon._id
+        coupon_code_used = coupon.code
       }
 
-      const alreadyUsed = coupon.used_by.some((id) => id.toString() === user_id)
+      const final_price = Math.max(0, total_price - discount_amount)
 
-      if (alreadyUsed) {
-        throw new ErrorWithStatus({
-          message: MESSAGES.COUPON_ALREADY_USED,
-          status: HTTP_STATUS.BAD_REQUEST
-        })
-      }
+      // ====================== 9. BOOKING CODE ======================
+      const booking_code = await generateBookingCode()
 
-      discount_amount = coupon.value
-      coupon_id = coupon._id
-      coupon_code_used = coupon.code
-    }
-
-    const final_price = Math.max(0, total_price - discount_amount)
-
-    // ====================== 8. BOOKING CODE ======================
-    const booking_code = await generateBookingCode()
-
-    // ====================== 9. TẠO BOOKING ======================
-    const booking = new Booking({
-      booking_code,
-      user_id: new ObjectId(user_id),
-      schedule_id: scheduleObjectId,
-      coupon_id,
-
-      tour_snapshot: {
-        tour_id: tour._id as ObjectId,
-        tour_name: tour.name,
+      // ====================== 10. TẠO BOOKING ======================
+      const booking = new Booking({
+        booking_code,
+        user_id: userObjectId,
         schedule_id: scheduleObjectId,
-        departure_date: updatedSchedule.departure_date,
-        return_date: updatedSchedule.return_date,
-        price_adult: updatedSchedule.price_adult,
-        price_child: updatedSchedule.price_child,
-        price_baby: updatedSchedule.price_baby
-      },
+        coupon_id,
 
-      passengers: {
-        adults: passengers.adults || 0,
-        children: passengers.children || 0,
-        babies: passengers.babies || 0
-      },
+        tour_snapshot: {
+          tour_id: tour._id as ObjectId,
+          tour_name: tour.name,
+          schedule_id: scheduleObjectId,
+          departure_date: updatedSchedule.departure_date,
+          return_date: updatedSchedule.return_date,
+          price_adult: updatedSchedule.price_adult,
+          price_child: updatedSchedule.price_child,
+          price_baby: updatedSchedule.price_baby
+        },
 
-      contact_info,
+        passengers: {
+          adults: passengers.adults || 0,
+          children: passengers.children || 0,
+          babies: passengers.babies || 0
+        },
 
-      price_detail: {
-        adult_count: passengers.adults || 0,
-        child_count: passengers.children || 0,
-        baby_count: passengers.babies || 0,
-        adult_total,
-        child_total,
-        baby_total,
-        discount_amount,
-        coupon_code: coupon_code_used
-      },
+        contact_info,
 
-      total_price,
-      final_price
-    })
+        price_detail: {
+          adult_count: passengers.adults || 0,
+          child_count: passengers.children || 0,
+          baby_count: passengers.babies || 0,
+          adult_total,
+          child_total,
+          baby_total,
+          discount_amount,
+          coupon_code: coupon_code_used
+        },
 
-    const result = await databaseServices.bookings.insertOne(booking)
-    booking._id = result.insertedId
+        total_price,
+        final_price
+      })
 
-    return { booking }
+      const result = await databaseServices.bookings.insertOne(booking)
+      booking._id = result.insertedId
+
+      return { booking }
+    } catch (error) {
+      // ====================== 🔥 ROLLBACK SLOT ======================
+      await databaseServices.schedules.updateOne(
+        { _id: scheduleObjectId },
+        {
+          $inc: { available_slots: totalPassengers }
+        }
+      )
+
+      throw error
+    }
   }
 
   async getMyBookings(user_id: string, query: GetMyBookingsQuery) {
