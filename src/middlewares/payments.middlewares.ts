@@ -35,11 +35,21 @@ export const createPaymentValidator: ParamSchema = {
           status: HTTP_STATUS.FORBIDDEN
         })
       }
-      if (booking.status !== BookingStatus.Pending) {
-        throw new ErrorWithStatus({
-          message: MESSAGES.BOOKING_ALREADY_PAID,
-          status: HTTP_STATUS.BAD_REQUEST
-        })
+      switch (booking.status) {
+        case BookingStatus.Pending:
+          break
+
+        case BookingStatus.Confirmed:
+          throw new Error('Booking already paid')
+
+        case BookingStatus.Cancelled:
+          throw new Error('Booking has expired')
+
+        case BookingStatus.Completed:
+          throw new Error('Booking already completed')
+
+        default:
+          throw new Error('Invalid booking status')
       }
       return true
     }
