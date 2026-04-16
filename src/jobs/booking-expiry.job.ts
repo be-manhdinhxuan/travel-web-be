@@ -1,15 +1,15 @@
 import cron from 'node-cron'
 import { ObjectId } from 'mongodb'
 import databaseServices from '~/services/database.services'
-import { BookingStatus, PaymentStatus, ScheduleStatus } from '~/constants/enums'
+import { BookingStatus, ScheduleStatus } from '~/constants/enums'
 
 const cancelExpiredBookings = async () => {
-  const expiredTime = new Date(Date.now() - 15 * 60 * 1000)
+  const now = new Date()
 
   const expiredBookings = await databaseServices.bookings
     .find({
       status: BookingStatus.Pending,
-      created_at: { $lt: expiredTime }
+      expired_at: { $lt: now }
     })
     .toArray()
 
@@ -18,40 +18,34 @@ const cancelExpiredBookings = async () => {
   for (const booking of expiredBookings) {
     const totalPassengers = booking.passengers.adults + booking.passengers.children + booking.passengers.babies
 
-    // hoàn lại số chỗ
-    await databaseServices.schedules.updateOne(
-      { _id: booking.schedule_id },
-      { $inc: { available_slots: totalPassengers } }
-    )
-
-    // hủy booking
-    await databaseServices.bookings.updateOne(
-      { _id: booking._id },
+    const updatedBooking = await databaseServices.bookings.findOneAndUpdate(
+      {
+        _id: booking._id,
+        status: BookingStatus.Pending
+      },
       {
         $set: {
           status: BookingStatus.Cancelled,
           cancelled_reason: 'Hết thời gian thanh toán',
           updated_at: new Date()
         }
-      }
-    )
-
-    // cập nhật payment status = Failed
-    await databaseServices.payments.updateOne(
-      {
-        booking_id: booking._id,
-        status: PaymentStatus.Pending
       },
       {
-        $set: {
-          status: PaymentStatus.Failed,
-          updated_at: new Date()
-        }
+        returnDocument: 'before'
       }
     )
-  }
 
-  console.log(`Đã hủy ${expiredBookings.length} booking hết hạn`)
+    if (!updatedBooking) continue
+
+    await databaseServices.schedules.updateOne(
+      { _id: booking.schedule_id },
+      {
+        $inc: { available_slots: totalPassengers }
+      }
+    )
+
+    console.log('[CRON] Cancel booking:', booking._id)
+  }
 }
 
 const completeExpiredBookings = async () => {
