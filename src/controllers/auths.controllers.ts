@@ -1,6 +1,8 @@
+import axios from 'axios'
 import { Request, Response, NextFunction } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
 import { ObjectId } from 'mongodb'
+import qs from 'qs'
 import { UserStatus, UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { MESSAGES } from '~/constants/messages'
@@ -126,4 +128,43 @@ export const resetPasswordController = async (
   const { password, confirm_password } = req.body
   const result = await authsService.resetPassword(user_id, password, confirm_password)
   return res.json(result)
+}
+
+export const googleLoginController = (req: Request, res: Response) => {
+  const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
+
+  const options = {
+    redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    access_type: 'offline',
+    response_type: 'code',
+    prompt: 'consent',
+    scope: ['openid', 'email', 'profile'].join(' ')
+  }
+
+  const url = `${rootUrl}?${qs.stringify(options)}`
+
+  return res.redirect(url)
+}
+
+export const googleCallbackController = async (req: Request, res: Response) => {
+  const code = req.query.code as string
+
+  try {
+    const result = await authsService.loginWithGoogle(code)
+
+    const redirectUrl = `${process.env.CLIENT_URL}/oauth-success.html?access_token=${result.access_token}&refresh_token=${result.refresh_token}`
+
+    return res.redirect(redirectUrl)
+  } catch (error: any) {
+    console.error('Google OAuth error:', error)
+
+    // nếu là banned
+    if (error.message === MESSAGES.ACCOUNT_BANNED) {
+      return res.redirect(`${process.env.CLIENT_URL}/dang-nhap.html?error=account_banned`)
+    }
+
+    // fallback
+    return res.redirect(`${process.env.CLIENT_URL}/dang-nhap.html?error=google_failed`)
+  }
 }

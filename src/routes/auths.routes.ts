@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import {
   forgotPasswordController,
+  googleCallbackController,
+  googleLoginController,
   loginController,
   logoutController,
   refreshTokenController,
@@ -146,5 +148,21 @@ authsRouter.post(
   resetPasswordValidator,
   wrapRequestHandler(resetPasswordController)
 )
+
+/**
+ * Description: Google OAuth login
+ * Path: /google
+ * Method: GET
+ * Query: {redirect: string} - optional, the URL to redirect after login success, default is CLIENT_URL
+ */
+authsRouter.get('/google', googleLoginController)
+
+/**
+ * Description: Google OAuth callback
+ * Path: /google/callback
+ * Method: GET
+ * Query: {code: string, state: string}
+ */
+authsRouter.get('/google/callback', googleCallbackController)
 
 export default authsRouter

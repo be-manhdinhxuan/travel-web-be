@@ -11,6 +11,8 @@ import emailService from './email.services'
 import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
+import axios from 'axios'
+import qs from 'qs'
 
 class AuthService {
   private signAccessToken({
@@ -394,6 +396,93 @@ class AuthService {
 
     return {
       message: MESSAGES.RESET_PASSWORD_SUCCESS
+    }
+  }
+
+  async loginWithGoogle(code: string) {
+    const tokenRes = await axios.post(
+      'https://oauth2.googleapis.com/token',
+      qs.stringify({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+        grant_type: 'authorization_code'
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      }
+    )
+
+    const { access_token } = tokenRes.data
+
+    const userInfoRes = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${access_token}`
+      }
+    })
+
+    const { email, name, picture } = userInfoRes.data
+
+    if (!email) {
+      throw new ErrorWithStatus({
+        message: 'Không lấy được email từ Google',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const normalizedEmail = email.toLowerCase()
+
+    let user = await databaseServices.users.findOne({ email: normalizedEmail })
+
+    if (user?.status === UserStatus.Banned) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.ACCOUNT_BANNED,
+        status: HTTP_STATUS.FORBIDDEN
+      })
+    }
+
+    if (!user) {
+      const newUser = new User({
+        email: normalizedEmail,
+        full_name: name,
+        password: await hashPassword(Math.random().toString()),
+        date_of_birth: new Date(),
+        verify: UserVerifyStatus.Verified,
+        avatar: picture
+      })
+
+      const result = await databaseServices.users.insertOne(newUser)
+
+      user = {
+        ...newUser,
+        _id: result.insertedId
+      }
+    }
+
+    if (!user) {
+      throw new Error('User creation failed')
+    }
+
+    const access_token_app = await this.signAccessToken({
+      user_id: user._id!.toString(),
+      role: user.role,
+      verify: user.verify,
+      status: user.status
+    })
+
+    const refresh_token_app = await this.signRefreshToken({
+      user_id: user._id!.toString(),
+      role: user.role,
+      verify: user.verify,
+      status: user.status
+    })
+
+    return {
+      access_token: access_token_app,
+      refresh_token: refresh_token_app
     }
   }
 }
