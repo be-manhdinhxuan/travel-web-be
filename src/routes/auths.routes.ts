@@ -111,7 +111,7 @@ authsRouter.post(
 
 /**
  * Description: Submit email to reset password, send email to user
- * Path: /forgot-passwor
+ * Path: /forgot-password
  * Method: POST
  * Body: {email: string}
  */

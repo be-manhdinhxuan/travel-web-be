@@ -6,7 +6,7 @@ import { RegisterReqBody } from '~/models/requests/Auth.requests'
 import { ObjectId } from 'mongodb'
 import databaseServices from './database.services'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
-import { hashPassword } from '~/utils/crypto'
+import { comparePassword, hashPassword } from '~/utils/crypto'
 import emailService from './email.services'
 import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
@@ -359,8 +359,27 @@ class AuthService {
     }
   }
 
-  async resetPassword(user_id: string, password: string) {
-    databaseServices.users.updateOne(
+  async resetPassword(user_id: string, password: string, confirm_password: string) {
+    const user = await databaseServices.users.findOne({ _id: new ObjectId(user_id) })
+
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // không cho dùng lại mật khẩu cũ
+    const isSameOldPassword = await comparePassword(password, user.password)
+
+    if (isSameOldPassword) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.NEW_PASSWORD_MUST_BE_DIFFERENT,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    await databaseServices.users.updateOne(
       { _id: new ObjectId(user_id) },
       {
         $set: {
@@ -372,6 +391,7 @@ class AuthService {
         }
       }
     )
+
     return {
       message: MESSAGES.RESET_PASSWORD_SUCCESS
     }
