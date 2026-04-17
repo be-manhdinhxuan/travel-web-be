@@ -402,3 +402,16 @@ export const resetPasswordValidator = validate(
     ['body']
   )
 )
+
+export const facebookCompleteValidator = validate(
+  checkSchema({
+    email: {
+      isEmail: true,
+      errorMessage: 'Email không hợp lệ'
+    },
+    provider_id: {
+      notEmpty: true,
+      errorMessage: 'Thiếu provider_id'
+    }
+  })
+)

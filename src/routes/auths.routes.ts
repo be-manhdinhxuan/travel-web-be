@@ -1,5 +1,8 @@
 import { Router } from 'express'
 import {
+  facebookCallbackController,
+  facebookCompleteController,
+  facebookLoginController,
   forgotPasswordController,
   googleCallbackController,
   googleLoginController,
@@ -15,6 +18,7 @@ import {
 import {
   accessTokenValidator,
   emailVerifyTokenValidator,
+  facebookCompleteValidator,
   forgotPasswordValidator,
   loginValidator,
   refreshTokenValidator,
@@ -155,7 +159,7 @@ authsRouter.post(
  * Method: GET
  * Query: {redirect: string} - optional, the URL to redirect after login success, default is CLIENT_URL
  */
-authsRouter.get('/google', googleLoginController)
+authsRouter.get('/google', wrapRequestHandler(googleLoginController))
 
 /**
  * Description: Google OAuth callback
@@ -163,6 +167,30 @@ authsRouter.get('/google', googleLoginController)
  * Method: GET
  * Query: {code: string, state: string}
  */
-authsRouter.get('/google/callback', googleCallbackController)
+authsRouter.get('/google/callback', wrapRequestHandler(googleCallbackController))
+
+/**
+ * Description: Facebook OAuth login
+ * Path: /facebook
+ * Method: GET
+ * Query: {redirect: string} - optional, the URL to redirect after login success, default is CLIENT_URL
+ */
+authsRouter.get('/facebook', wrapRequestHandler(facebookLoginController))
+
+/**
+ * Description: Facebook OAuth callback
+ * Path: /facebook/callback
+ * Method: GET
+ * Query: {code: string, state: string}
+ */
+authsRouter.get('/facebook/callback', wrapRequestHandler(facebookCallbackController))
+
+/**
+ * Description: Facebook complete login (handle callback from Facebook)
+ * Path: /facebook/complete
+ * Method: POST
+ * Body: {email: string, provider_id: string}
+ */
+authsRouter.post('/facebook/complete', facebookCompleteValidator, wrapRequestHandler(facebookCompleteController))
 
 export default authsRouter

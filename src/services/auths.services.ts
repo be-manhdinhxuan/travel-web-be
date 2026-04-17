@@ -424,7 +424,7 @@ class AuthService {
       }
     })
 
-    const { email, name, picture } = userInfoRes.data
+    const { email, name, picture, id } = userInfoRes.data
 
     if (!email) {
       throw new ErrorWithStatus({
@@ -435,8 +435,15 @@ class AuthService {
 
     const normalizedEmail = email.toLowerCase()
 
-    let user = await databaseServices.users.findOne({ email: normalizedEmail })
+    // tìm theo provider_id trước
+    let user = await databaseServices.users.findOne({ provider: 'google', provider_id: id })
 
+    // nếu chưa có -> tìm theo email
+    if (!user) {
+      user = await databaseServices.users.findOne({ email: normalizedEmail })
+    }
+
+    // check nếu bị banned
     if (user?.status === UserStatus.Banned) {
       throw new ErrorWithStatus({
         message: MESSAGES.ACCOUNT_BANNED,
@@ -444,6 +451,18 @@ class AuthService {
       })
     }
 
+    // nếu user tồn tại nhưng chưa liên kết với google thì update để liên kết
+    if (user && user.provider !== 'google') {
+      await databaseServices.users.updateOne(
+        { _id: user._id },
+        {
+          $set: { provider: 'google', provider_id: id },
+          $currentDate: { updated_at: true }
+        }
+      )
+    }
+
+    // nếu chưa có user nào cả thì tạo mới
     if (!user) {
       const newUser = new User({
         email: normalizedEmail,
@@ -451,7 +470,9 @@ class AuthService {
         password: await hashPassword(Math.random().toString()),
         date_of_birth: new Date(),
         verify: UserVerifyStatus.Verified,
-        avatar: picture
+        avatar: picture,
+        provider: 'google',
+        provider_id: id
       })
 
       const result = await databaseServices.users.insertOne(newUser)
@@ -483,6 +504,189 @@ class AuthService {
     return {
       access_token: access_token_app,
       refresh_token: refresh_token_app
+    }
+  }
+
+  async loginWithFacebook(code: string) {
+    // 1. đổi code → access token
+    const tokenRes = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+      params: {
+        client_id: process.env.FACEBOOK_CLIENT_ID,
+        client_secret: process.env.FACEBOOK_CLIENT_SECRET,
+        redirect_uri: process.env.FACEBOOK_REDIRECT_URI,
+        code
+      }
+    })
+
+    const access_token = tokenRes.data.access_token
+
+    // 2. lấy user info
+    const userRes = await axios.get('https://graph.facebook.com/me', {
+      params: {
+        fields: 'id,name,email,picture',
+        access_token
+      }
+    })
+
+    const { email, name, picture, id } = userRes.data
+
+    // 🔥 tìm theo facebook id trước
+    let user = await databaseServices.users.findOne({
+      provider: 'facebook',
+      provider_id: id
+    })
+
+    // 🔥 nếu chưa có → tìm theo email
+    if (!user && email) {
+      const normalizedEmail = email.toLowerCase()
+      user = await databaseServices.users.findOne({ email: normalizedEmail })
+    }
+
+    // 🔒 check banned
+    if (user?.status === UserStatus.Banned) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.ACCOUNT_BANNED,
+        status: HTTP_STATUS.FORBIDDEN
+      })
+    }
+
+    // 🔗 link account nếu cần
+    if (user && user.provider !== 'facebook') {
+      await databaseServices.users.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            provider: 'facebook',
+            provider_id: id
+          },
+          $currentDate: { updated_at: true }
+        }
+      )
+    }
+
+    // 🔥 CASE QUAN TRỌNG: KHÔNG CÓ EMAIL
+    if (!user && !email) {
+      throw Object.assign(new Error('EMAIL_REQUIRED'), {
+        provider_id: id
+      })
+    }
+
+    // 🆕 create nếu có email
+    if (!user && email) {
+      const normalizedEmail = email.toLowerCase()
+
+      const newUser = new User({
+        email: normalizedEmail,
+        full_name: name,
+        password: await hashPassword(Math.random().toString()),
+        date_of_birth: new Date(),
+        verify: UserVerifyStatus.Verified,
+        avatar: picture?.data?.url || '',
+        provider: 'facebook',
+        provider_id: id
+      })
+
+      const result = await databaseServices.users.insertOne(newUser)
+
+      user = {
+        ...newUser,
+        _id: result.insertedId
+      }
+    }
+
+    if (!user) {
+      throw new Error('User creation failed')
+    }
+
+    // 🔐 token
+    const access_token_app = await this.signAccessToken({
+      user_id: user._id!.toString(),
+      role: user.role,
+      verify: user.verify,
+      status: user.status
+    })
+
+    const refresh_token_app = await this.signRefreshToken({
+      user_id: user._id!.toString(),
+      role: user.role,
+      verify: user.verify,
+      status: user.status
+    })
+
+    return {
+      access_token: access_token_app,
+      refresh_token: refresh_token_app
+    }
+  }
+
+  async completeFacebook(email: string, provider_id: string) {
+    const normalizedEmail = email.toLowerCase()
+
+    // tìm user theo email
+    let user = await databaseServices.users.findOne({ email: normalizedEmail })
+
+    // nếu user tồn tại nhưng bị khóa
+    if (user?.status === UserStatus.Banned) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.ACCOUNT_BANNED,
+        status: HTTP_STATUS.FORBIDDEN
+      })
+    }
+
+    // nếu user tồn tại → link facebook
+    if (user) {
+      await databaseServices.users.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            provider: 'facebook',
+            provider_id,
+            updated_at: new Date()
+          }
+        }
+      )
+    } else {
+      // tạo user mới
+      const newUser = new User({
+        email: normalizedEmail,
+        full_name: '', // FE có thể bổ sung sau
+        password: await hashPassword(Math.random().toString()),
+        date_of_birth: new Date(),
+        verify: UserVerifyStatus.Verified,
+        provider: 'facebook',
+        provider_id
+      })
+
+      const result = await databaseServices.users.insertOne(newUser)
+
+      user = {
+        ...newUser,
+        _id: result.insertedId
+      }
+    }
+
+    if (!user) {
+      throw new Error('User creation failed')
+    }
+
+    // generate token
+    const access_token = await this.signAccessToken({
+      user_id: user._id!.toString(),
+      role: user.role,
+      verify: user.verify,
+      status: user.status
+    })
+
+    const refresh_token = await this.signRefreshToken({
+      user_id: user._id!.toString(),
+      role: user.role,
+      verify: user.verify,
+      status: user.status
+    })
+
+    return {
+      access_token,
+      refresh_token
     }
   }
 }

@@ -168,3 +168,69 @@ export const googleCallbackController = async (req: Request, res: Response) => {
     return res.redirect(`${process.env.CLIENT_URL}/dang-nhap.html?error=google_failed`)
   }
 }
+
+export const facebookLoginController = (req: Request, res: Response) => {
+  const rootUrl = 'https://www.facebook.com/v18.0/dialog/oauth'
+
+  const params = new URLSearchParams({
+    client_id: process.env.FACEBOOK_CLIENT_ID!,
+    redirect_uri: process.env.FACEBOOK_REDIRECT_URI!,
+    scope: 'email,public_profile',
+    response_type: 'code'
+  })
+
+  return res.redirect(`${rootUrl}?${params.toString()}`)
+}
+
+export const facebookCallbackController = async (req: Request, res: Response) => {
+  const code = req.query.code as string
+
+  try {
+    const result = await authsService.loginWithFacebook(code)
+
+    const redirectUrl = `${process.env.CLIENT_URL}/oauth-success.html?access_token=${result.access_token}&refresh_token=${result.refresh_token}`
+
+    return res.redirect(redirectUrl)
+  } catch (error: any) {
+    console.error('Facebook OAuth error:', error)
+
+    // CASE QUAN TRỌNG
+    if (error.message === 'EMAIL_REQUIRED') {
+      return res.redirect(
+        `${process.env.CLIENT_URL}/dang-nhap.html?error=email_required&provider=facebook&provider_id=${error.provider_id}`
+      )
+    }
+
+    // account bị khóa
+    if (error.status === HTTP_STATUS.FORBIDDEN) {
+      return res.redirect(`${process.env.CLIENT_URL}/dang-nhap.html?error=account_banned`)
+    }
+
+    return res.redirect(`${process.env.CLIENT_URL}/dang-nhap.html?error=facebook_failed`)
+  }
+}
+
+export const facebookCompleteController = async (req: Request, res: Response) => {
+  try {
+    const { email, provider_id } = req.body
+
+    const result = await authsService.completeFacebook(email, provider_id)
+
+    return res.json({
+      message: 'Hoàn tất đăng nhập Facebook thành công',
+      result
+    })
+  } catch (error: any) {
+    console.error('Facebook complete error:', error)
+
+    if (error.status === HTTP_STATUS.FORBIDDEN) {
+      return res.status(error.status).json({
+        message: MESSAGES.ACCOUNT_BANNED
+      })
+    }
+
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      message: 'Không thể hoàn tất đăng nhập Facebook'
+    })
+  }
+}
