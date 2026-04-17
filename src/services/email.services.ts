@@ -10,8 +10,20 @@ const transporter = nodemailer.createTransport({
   }
 })
 
+const buildClientUrl = (path: string, params?: Record<string, string>) => {
+  const url = new URL(path, process.env.CLIENT_URL)
+
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      url.searchParams.append(key, value)
+    })
+  }
+
+  return url.toString()
+}
+
 const sendVerifyEmail = async (to: string, token: string) => {
-  const verifyUrl = `${process.env.CLIENT_URL}/code%20du%20an/html/xac-thuc.html?token=${token}`
+  const verifyUrl = buildClientUrl(process.env.VERIFY_EMAIL_URL!, { token })
 
   await transporter.sendMail({
     from: `"Travel Web" <${process.env.MAIL_USER}>`,
@@ -22,7 +34,7 @@ const sendVerifyEmail = async (to: string, token: string) => {
 }
 
 const sendForgotPasswordEmail = async (to: string, forgot_password_token: string) => {
-  const resetUrl = `${process.env.CLIENT_URL}/code%20du%20an/html/quen-mat-khau.html?token=${forgot_password_token}`
+  const resetUrl = buildClientUrl(process.env.FORGOT_PASSWORD_URL!, { token: forgot_password_token })
 
   await transporter.sendMail({
     from: `"Travel Web" <${process.env.MAIL_USER}>`,
