@@ -123,7 +123,7 @@ export const resetPasswordController = async (
   next: NextFunction
 ) => {
   const { user_id } = req.decoded_forgot_password_token as TokenPayload
-  const { password } = req.body
-  const result = await authsService.resetPassword(user_id, password)
+  const { password, confirm_password } = req.body
+  const result = await authsService.resetPassword(user_id, password, confirm_password)
   return res.json(result)
 }
