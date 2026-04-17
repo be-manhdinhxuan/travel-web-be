@@ -16,6 +16,8 @@ interface UserType {
   phone?: string
   address?: string
   wishlist?: ObjectId[]
+  provider?: 'local' | 'google' | 'facebook'
+  provider_id?: string
   created_at?: Date
   updated_at?: Date
 }
@@ -35,6 +37,8 @@ export default class User {
   phone: string
   address: string
   wishlist: ObjectId[]
+  provider: 'local' | 'google' | 'facebook'
+  provider_id: string
   created_at?: Date
   updated_at?: Date
 
@@ -54,6 +58,8 @@ export default class User {
     this.phone = user.phone || ''
     this.address = user.address || ''
     this.wishlist = user.wishlist || []
+    this.provider = user.provider || 'local'
+    this.provider_id = user.provider_id || '' || user.email
     this.created_at = user.created_at || date
     this.updated_at = user.updated_at || date
   }
