@@ -4,6 +4,7 @@ import Category from '~/models/schemas/Category.schema'
 import Coupon from '~/models/schemas/Coupon.schema'
 import Payment from '~/models/schemas/Payment.schema'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
+import Review from '~/models/schemas/Review.schema'
 import Schedule from '~/models/schemas/Schedule.schema'
 import Tour from '~/models/schemas/Tour.schema'
 import User from '~/models/schemas/User.schema'
@@ -62,6 +63,11 @@ class DatabaseService {
     await this.coupons.createIndex({ code: 1 }, { unique: true })
     await this.coupons.createIndex({ is_active: 1 })
     await this.coupons.createIndex({ expires_at: 1 })
+
+    // reviews
+    await this.reviews.createIndex({ booking_id: 1 }, { unique: true }) // 1 booking = 1 review
+    await this.reviews.createIndex({ tour_id: 1 })
+    await this.reviews.createIndex({ user_id: 1 })
   }
 
   async connect() {
@@ -98,6 +104,9 @@ class DatabaseService {
   }
   get coupons(): Collection<Coupon> {
     return this.db.collection(process.env.DB_COUPONS_COLLECTION as string)
+  }
+  get reviews(): Collection<Review> {
+    return this.db.collection(process.env.DB_REVIEWS_COLLECTION as string)
   }
 }
 

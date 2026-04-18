@@ -259,5 +259,15 @@ export const MESSAGES = {
   YEAR_IS_INVALID: 'Year is invalid',
   LIMIT_MUST_BE_FROM_1_TO_20: 'Limit must be from 1 to 20',
 
-  GET_RECOMMENDED_TOURS_SUCCESS: 'Get recommended tours success'
+  GET_RECOMMENDED_TOURS_SUCCESS: 'Get recommended tours success',
+
+  BOOKING_NOT_ELIGIBLE_FOR_REVIEW: 'Booking is not eligible for review',
+  BOOKING_ALREADY_REVIEWED: 'Booking already reviewed',
+  CREATE_REVIEW_SUCCESS: 'Create review success',
+  RATING_IS_REQUIRED: 'Rating is required',
+  RATING_MUST_BE_FROM_1_TO_5: 'Rating must be from 1 to 5',
+  LIMIT_MUST_BE_FROM_1_TO_50: 'Limit must be from 1 to 50',
+  COMMENT_MUST_BE_A_STRING: 'Comment must be a string',
+  COMMENT_TOO_LONG: 'Comment must be at most 1000 characters',
+  GET_REVIEWS_SUCCESS: 'Get reviews success'
 } as const

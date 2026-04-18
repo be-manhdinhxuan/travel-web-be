@@ -23,6 +23,8 @@ interface TourType {
   includes?: string[]
   excludes?: string[]
   status?: TourStatus
+  average_rating?: number // default 0
+  total_reviews?: number // default 0
   created_at?: Date
   updated_at?: Date
 }
@@ -43,6 +45,8 @@ export default class Tour {
   includes: string[]
   excludes: string[]
   status: TourStatus
+  average_rating: number // default 0
+  total_reviews: number // default 0
   created_at: Date
   updated_at: Date
   constructor(tour: TourType) {
@@ -62,6 +66,8 @@ export default class Tour {
     this.includes = tour.includes || []
     this.excludes = tour.excludes || []
     this.status = tour.status ?? TourStatus.Inactive
+    this.average_rating = tour.average_rating ?? 0
+    this.total_reviews = tour.total_reviews ?? 0
     this.created_at = tour.created_at || date
     this.updated_at = tour.updated_at || date
   }
