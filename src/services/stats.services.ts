@@ -1,5 +1,9 @@
 import { BookingStatus, PaymentStatus } from '~/constants/enums'
 import databaseServices from './database.services'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import { Document } from 'mongodb'
 
 // helper tính khoảng thời gian
 const getPeriodRange = (period: string) => {
@@ -118,6 +122,11 @@ function fillMissingYears(data: any[]) {
   return result
 }
 
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+const TZ = 'Asia/Ho_Chi_Minh'
+
 class StatsService {
   async getOverviewStats(period: string) {
     const { from, to } = getPeriodRange(period).current
@@ -186,81 +195,85 @@ class StatsService {
   }
 
   async getRevenueStats(period: string, year?: number) {
-    const now = new Date()
-    const currentYear = year || now.getFullYear()
+    const now = dayjs().tz(TZ)
+    const currentYear = year || now.year()
 
-    // Config dynamic for each period
-    const buildConfig = () => {
-      let matchRange: any
-      let paymentGroupId: any
-      let bookingGroupId: any
+    // ===== 1. BUILD RANGE =====
+    const getRange = () => {
+      if (period === 'today') {
+        return {
+          start: now.startOf('day').utc().toDate(),
+          end: now.endOf('day').utc().toDate()
+        }
+      }
 
+      if (period === 'week') {
+        return {
+          start: now.subtract(6, 'day').startOf('day').utc().toDate(),
+          end: now.endOf('day').utc().toDate()
+        }
+      }
+
+      if (period === 'month') {
+        return {
+          start: dayjs.tz(`${currentYear}-01-01`, TZ).startOf('day').utc().toDate(),
+          end: dayjs.tz(`${currentYear}-12-31`, TZ).endOf('day').utc().toDate()
+        }
+      }
+
+      if (period === 'year') {
+        const fromYear = currentYear - 4
+        return {
+          start: dayjs.tz(`${fromYear}-01-01`, TZ).startOf('day').utc().toDate(),
+          end: now.endOf('day').utc().toDate()
+        }
+      }
+
+      throw new Error('Invalid period')
+    }
+
+    const { start, end } = getRange()
+
+    // ===== 2. BUILD GROUP ID =====
+    const getGroupId = (field: any) => {
       if (period === 'today' || period === 'week') {
-        const start = new Date()
-        if (period === 'today') {
-          start.setHours(0, 0, 0, 0)
-        } else {
-          start.setDate(now.getDate() - 6)
-          start.setHours(0, 0, 0, 0)
-        }
-
-        matchRange = { $gte: start, $lte: now }
-
-        paymentGroupId = {
+        return {
           $dateToString: {
             format: '%Y-%m-%d',
-            date: {
-              $cond: [{ $eq: ['$status', PaymentStatus.Success] }, '$paid_at', '$updated_at']
-            }
-          }
-        }
-
-        bookingGroupId = {
-          $dateToString: {
-            format: '%Y-%m-%d',
-            date: '$updated_at'
+            timezone: TZ,
+            date: field
           }
         }
       }
 
       if (period === 'month') {
-        matchRange = {
-          $gte: new Date(currentYear, 0, 1),
-          $lte: new Date(currentYear, 11, 31, 23, 59, 59)
-        }
-
-        paymentGroupId = {
-          $month: {
-            $cond: [{ $eq: ['$status', PaymentStatus.Success] }, '$paid_at', '$updated_at']
+        return {
+          $dateToString: {
+            format: '%Y-%m',
+            timezone: TZ,
+            date: field
           }
         }
-
-        bookingGroupId = { $month: '$updated_at' }
       }
 
       if (period === 'year') {
-        const fromYear = currentYear - 4
-
-        matchRange = {
-          $gte: new Date(fromYear, 0, 1),
-          $lte: now
-        }
-
-        paymentGroupId = {
-          $year: {
-            $cond: [{ $eq: ['$status', PaymentStatus.Success] }, '$paid_at', '$updated_at']
+        return {
+          $dateToString: {
+            format: '%Y',
+            timezone: TZ,
+            date: field
           }
         }
-
-        bookingGroupId = { $year: '$updated_at' }
       }
-
-      return { matchRange, paymentGroupId, bookingGroupId }
     }
 
-    const { matchRange, paymentGroupId, bookingGroupId } = buildConfig()
+    const paymentGroupId = getGroupId({
+      $cond: [{ $eq: ['$status', PaymentStatus.Success] }, '$paid_at', '$updated_at']
+    })
 
-    // AGGREGATE PAYMENTS
+    const bookingGroupId = getGroupId('$updated_at')
+
+    // ===== 3. AGGREGATE PAYMENTS =====
     const paymentsRaw = await databaseServices.payments
       .aggregate([
         {
@@ -268,7 +281,7 @@ class StatsService {
             status: {
               $in: [PaymentStatus.Success, PaymentStatus.Refunded, PaymentStatus.Refunded_Pending]
             },
-            $or: [{ paid_at: matchRange }, { updated_at: matchRange }]
+            $or: [{ paid_at: { $gte: start, $lte: end } }, { updated_at: { $gte: start, $lte: end } }]
           }
         },
         {
@@ -303,13 +316,13 @@ class StatsService {
       ])
       .toArray()
 
-    // AGGREGATE CANCELLED BOOKINGS
+    // ===== 4. AGGREGATE CANCELLED =====
     const cancelledRaw = await databaseServices.bookings
       .aggregate([
         {
           $match: {
             status: BookingStatus.Cancelled,
-            updated_at: matchRange
+            updated_at: { $gte: start, $lte: end }
           }
         },
         {
@@ -321,26 +334,14 @@ class StatsService {
       ])
       .toArray()
 
-    // FORMAT MAP KEY
-    const formatKey = (id: any) => {
-      if (period === 'month') {
-        return `${currentYear}-${String(id).padStart(2, '0')}`
-      }
-      if (period === 'year') {
-        return String(id)
-      }
-      return String(id)
-    }
+    // ===== 5. MAP =====
+    const paymentMap = new Map(paymentsRaw.map((i) => [i._id, i]))
+    const cancelledMap = new Map(cancelledRaw.map((i) => [i._id, i.cancelled]))
 
-    const paymentMap = new Map(paymentsRaw.map((i) => [formatKey(i._id), i]))
-
-    const cancelledMap = new Map(cancelledRaw.map((i) => [formatKey(i._id), i.cancelled]))
-
-    // MERGE DATA
     const allKeys = new Set([...paymentMap.keys(), ...cancelledMap.keys()])
 
     const merged = Array.from(allKeys)
-      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      .sort()
       .map((date) => {
         const p = paymentMap.get(date)
 
@@ -355,7 +356,7 @@ class StatsService {
         }
       })
 
-    // FILL MISSING DATES
+    // ===== 6. FILL MISSING =====
     if (period === 'week') {
       return { chart_data: fillMissingDates(merged, 7) }
     }
