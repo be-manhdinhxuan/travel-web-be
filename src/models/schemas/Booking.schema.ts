@@ -49,6 +49,7 @@ interface BookingType {
   final_price: number
   status?: BookingStatus
   cancelled_reason?: string
+  reminder_sent?: boolean
   created_at?: Date
   updated_at?: Date
 }
@@ -67,6 +68,7 @@ export default class Booking {
   final_price: number
   status: BookingStatus
   cancelled_reason: string
+  reminder_sent: boolean
   created_at: Date
   updated_at: Date
   constructor(booking: BookingType) {
@@ -84,6 +86,7 @@ export default class Booking {
     this.final_price = booking.final_price
     this.status = booking.status || BookingStatus.Pending
     this.cancelled_reason = booking.cancelled_reason || ''
+    this.reminder_sent = booking.reminder_sent || false
     this.created_at = booking.created_at || date
     this.updated_at = booking.updated_at || date
   }

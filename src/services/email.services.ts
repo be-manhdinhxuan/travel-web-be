@@ -82,5 +82,35 @@ Travel Web
   })
 }
 
-const emailService = { sendVerifyEmail, sendForgotPasswordEmail, sendBookingSuccessEmail }
+const sendTourReminderEmail = async (to: string, booking: any) => {
+  const { booking_code, tour_snapshot, contact_info } = booking
+
+  const text = `
+    Xin chào ${contact_info.full_name},
+
+    ⏰ Đây là email nhắc nhở chuyến đi của bạn sắp diễn ra!
+
+    📌 Mã booking: ${booking_code}
+    🏝 Tour: ${tour_snapshot.tour_name}
+    📅 Khởi hành: ${new Date(tour_snapshot.departure_date).toLocaleDateString('vi-VN')}
+
+    🎒 Hãy chuẩn bị hành lý và sẵn sàng cho chuyến đi nhé!
+
+    Nếu bạn cần hỗ trợ, hãy liên hệ với chúng tôi.
+
+    Chúc bạn có chuyến đi tuyệt vời 🌟
+
+    Trân trọng,
+    Travel Web
+      `
+
+  await transporter.sendMail({
+    from: `"Travel Web" <${process.env.MAIL_USER}>`,
+    to,
+    subject: `Nhắc nhở chuyến đi sắp tới - ${booking_code}`,
+    text
+  })
+}
+
+const emailService = { sendVerifyEmail, sendForgotPasswordEmail, sendBookingSuccessEmail, sendTourReminderEmail }
 export default emailService

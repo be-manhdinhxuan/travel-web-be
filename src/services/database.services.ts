@@ -50,6 +50,7 @@ class DatabaseService {
     await this.bookings.createIndex({ user_id: 1 })
     await this.bookings.createIndex({ schedule_id: 1 })
     await this.bookings.createIndex({ status: 1 })
+    await this.bookings.createIndex({ status: 1, reminder_sent: 1, 'tour_snapshot.departure_date': 1 })
     await this.bookings.createIndex({ created_at: 1 })
 
     // payments
