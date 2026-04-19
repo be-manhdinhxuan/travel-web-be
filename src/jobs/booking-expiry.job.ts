@@ -4,12 +4,12 @@ import databaseServices from '~/services/database.services'
 import { BookingStatus, ScheduleStatus } from '~/constants/enums'
 
 const cancelExpiredBookings = async () => {
-  const now = new Date()
+  const experiedTime = new Date(Date.now() - 30 * 60 * 1000) // 30 phút trước
 
   const expiredBookings = await databaseServices.bookings
     .find({
       status: BookingStatus.Pending,
-      created_at: { $lt: now }
+      created_at: { $lt: experiedTime }
     })
     .toArray()
 
