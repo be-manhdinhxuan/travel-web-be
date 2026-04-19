@@ -53,25 +53,6 @@ export const createScheduleValidator = validate(
           }
         }
       },
-      return_date: {
-        notEmpty: {
-          errorMessage: MESSAGES.RETURN_DATE_IS_REQUIRED
-        },
-        isISO8601: {
-          options: { strict: true },
-          errorMessage: MESSAGES.RETURN_DATE_IS_INVALID
-        },
-        custom: {
-          options: (value: string, { req }) => {
-            const returnDate = new Date(value)
-            const departureDate = new Date(req.body.departure_date)
-            if (returnDate <= departureDate) {
-              throw new Error(MESSAGES.RETURN_DATE_MUST_BE_AFTER_DEPARTURE_DATE)
-            }
-            return true
-          }
-        }
-      },
       price_adult: {
         notEmpty: {
           errorMessage: MESSAGES.PRICE_ADULT_IS_REQUIRED
@@ -148,23 +129,6 @@ export const updateScheduleValidator = validate(
             const date = new Date(value)
             if (date <= new Date()) {
               throw new Error(MESSAGES.DEPARTURE_DATE_MUST_BE_IN_FUTURE)
-            }
-            return true
-          }
-        }
-      },
-      return_date: {
-        optional: true,
-        isISO8601: {
-          options: { strict: true },
-          errorMessage: MESSAGES.RETURN_DATE_IS_INVALID
-        },
-        custom: {
-          options: (value: string, { req }) => {
-            const returnDate = new Date(value)
-            const departureDate = new Date(req.body.departure_date)
-            if (req.body.departure_date && returnDate <= departureDate) {
-              throw new Error(MESSAGES.RETURN_DATE_MUST_BE_AFTER_DEPARTURE_DATE)
             }
             return true
           }
