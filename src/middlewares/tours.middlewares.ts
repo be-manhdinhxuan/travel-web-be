@@ -137,6 +137,16 @@ export const createTourValidator = validate(
           options: { min: 0 },
           errorMessage: MESSAGES.TOUR_DURATION_NIGHTS_MUST_BE_A_NON_NEGATIVE_INTEGER
         },
+        custom: {
+          options: (value, { req }) => {
+            const days = Number(req.body.duration_days)
+            const nights = Number(value)
+            if (nights !== days - 1) {
+              throw new Error('Số đêm phải bằng số ngày trừ 1')
+            }
+            return true
+          }
+        },
         toInt: true
       },
       itinerary: {
@@ -437,6 +447,20 @@ export const updateTourValidator = validate(
         isInt: {
           options: { min: 0 },
           errorMessage: MESSAGES.TOUR_DURATION_NIGHTS_MUST_BE_A_NON_NEGATIVE_INTEGER
+        },
+        custom: {
+          options: (value, { req }) => {
+            const days = req.body.duration_days
+            const nights = value
+
+            // 👉 nếu thiếu 1 trong 2 thì skip (để service xử lý)
+            if (days === undefined || nights === undefined) return true
+
+            if (Number(nights) !== Number(days) - 1) {
+              throw new Error('Số đêm phải bằng số ngày trừ 1')
+            }
+            return true
+          }
         },
         toInt: true
       },

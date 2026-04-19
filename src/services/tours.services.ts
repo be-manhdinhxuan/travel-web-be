@@ -13,8 +13,64 @@ import { generateUniqueTourSlug } from '~/utils/generateTourSlug'
 import { uploadImage } from '~/middlewares/uploads.middlewares'
 import cloudinary, { getPublicIdFromUrl } from '~/utils/cloudinary'
 
+function validateItinerary(itinerary: any[], durationDays: number) {
+  if (!Array.isArray(itinerary)) {
+    throw new ErrorWithStatus({
+      message: 'Hành trình phải là mảng',
+      status: HTTP_STATUS.BAD_REQUEST
+    })
+  }
+
+  // 1. check length
+  if (itinerary.length !== durationDays) {
+    throw new ErrorWithStatus({
+      message: `Hành trình phải có đúng ${durationDays} ngày`,
+      status: HTTP_STATUS.BAD_REQUEST
+    })
+  }
+
+  // 2. check day liên tục
+  const days = itinerary.map((item) => item.day).sort((a, b) => a - b)
+
+  for (let i = 0; i < days.length; i++) {
+    if (days[i] !== i + 1) {
+      throw new ErrorWithStatus({
+        message: 'Ngày trong hành trình phải liên tục từ 1 đến n',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+  }
+}
 class ToursService {
   async createTour(payload: CreateTourReqBody, files: Express.Multer.File[]) {
+    const days = Number(payload.duration_days)
+    const nights = Number(payload.duration_nights)
+
+    // validation logic duration
+    if (days < 1) {
+      throw new ErrorWithStatus({
+        message: 'Số ngày phải lớn hơn hoặc bằng 1',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    if (nights < 0) {
+      throw new ErrorWithStatus({
+        message: 'Số đêm phải lớn hơn hoặc bằng 0',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // rule chính
+    if (nights !== days - 1) {
+      throw new ErrorWithStatus({
+        message: 'Số đêm phải bằng số ngày trừ đi 1 (ví dụ: 3 ngày 2 đêm)',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    validateItinerary(payload.itinerary as any[], days)
+
     const images: string[] = []
 
     if (files?.length) {
@@ -492,7 +548,44 @@ class ToursService {
       })
     }
 
-    const updateData: Partial<Tour> = { ...rest }
+    // merge duration
+    const days = rest.duration_days !== undefined ? Number(rest.duration_days) : tour.duration_days
+    const nights = rest.duration_nights !== undefined ? Number(rest.duration_nights) : tour.duration_nights
+
+    // validate
+    if (days < 1) {
+      throw new ErrorWithStatus({
+        message: 'Số ngày phải lớn hơn hoặc bằng 1',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    if (nights < 0) {
+      throw new ErrorWithStatus({
+        message: 'Số đêm phải lớn hơn hoặc bằng 0',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    if (nights !== days - 1) {
+      throw new ErrorWithStatus({
+        message: 'Số đêm phải bằng số ngày trừ đi 1 (ví dụ: 3 ngày 2 đêm)',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    if (rest.itinerary !== undefined) {
+      validateItinerary(rest.itinerary, days)
+    } else {
+      if (rest.duration_days !== undefined || rest.duration_nights !== undefined) {
+        throw new ErrorWithStatus({
+          message: 'Phải cập nhật hành trình khi thay đổi số ngày',
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
+    }
+
+    const updateData: Partial<Tour> = { ...rest, duration_days: days, duration_nights: nights }
 
     // nếu name thay đổi
     if (name) {
@@ -527,24 +620,51 @@ class ToursService {
   }
 
   async updateTourStatus(id: string, status: number) {
-    const updateTour = await databaseServices.tours.findOneAndUpdate(
-      { _id: new ObjectId(id) },
+    const tourId = new ObjectId(id)
+
+    const tour = await databaseServices.tours.findOne({
+      _id: tourId
+    })
+
+    if (!tour) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.TOUR_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    // check booking active
+    const activeBooking = await databaseServices.bookings.findOne({
+      'tour_snapshot.tour_id': tourId,
+      status: { $in: [BookingStatus.Pending, BookingStatus.Confirmed] }
+    })
+
+    if (activeBooking) {
+      throw new ErrorWithStatus({
+        message: 'Không thể cập nhật trạng thái tour khi có booking đang xử lý',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const updatedTour = await databaseServices.tours.findOneAndUpdate(
+      { _id: tourId },
       {
         $set: { status },
         $currentDate: { updated_at: true }
       },
-
       { returnDocument: 'after' }
     )
-    return updateTour
+
+    return updatedTour
   }
 
   async deleteTour(id: string) {
-    const bookingCount = await databaseServices.bookings.countDocuments({
-      tour_id: new ObjectId(id)
+    const hasBooking = await databaseServices.bookings.findOne({
+      'tour_snapshot.tour_id': new ObjectId(id),
+      status: { $ne: BookingStatus.Cancelled }
     })
 
-    if (bookingCount > 0) {
+    if (hasBooking) {
       throw new ErrorWithStatus({
         message: MESSAGES.TOUR_HAS_BOOKINGS,
         status: HTTP_STATUS.BAD_REQUEST
