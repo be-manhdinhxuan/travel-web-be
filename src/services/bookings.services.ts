@@ -531,7 +531,7 @@ class BookingServices {
     // Role check
     if (status === BookingStatus.Cancelled && currentUserRole !== UserRole.Admin) {
       throw new ErrorWithStatus({
-        message: 'Only admin can cancel booking',
+        message: 'Chỉ admin mới có quyền hủy booking',
         status: HTTP_STATUS.FORBIDDEN
       })
     }
