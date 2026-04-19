@@ -9,7 +9,7 @@ const cancelExpiredBookings = async () => {
   const expiredBookings = await databaseServices.bookings
     .find({
       status: BookingStatus.Pending,
-      expired_at: { $lt: now }
+      created_at: { $lt: now }
     })
     .toArray()
 
