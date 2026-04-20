@@ -45,6 +45,16 @@ export const getCouponsController = async (
   })
 }
 
+export const getSuggestedCouponsController = async (req: Request, res: Response) => {
+  const user_id = req.decoded_authorization?.user_id as string
+  const booking_id = req.params.booking_id
+  const result = await couponsService.getSuggestedCoupons(user_id, booking_id as string)
+  return res.json({
+    message: MESSAGES.GET_COUPONS_SUCCESS,
+    result
+  })
+}
+
 export const updateCouponController = async (
   req: Request<ParamsDictionary, any, UpdateCouponReqBody>,
   res: Response

@@ -40,7 +40,7 @@ class BookingServices {
 
     if (existingBooking) {
       throw new ErrorWithStatus({
-        message: 'You already have a booking for this schedule',
+        message: 'Bạn đã có đặt chỗ cho lịch trình này rồi.',
         status: HTTP_STATUS.BAD_REQUEST
       })
     }

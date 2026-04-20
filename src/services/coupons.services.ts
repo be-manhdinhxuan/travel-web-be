@@ -10,6 +10,8 @@ import { Filter, ObjectId } from 'mongodb'
 import { Request } from 'express'
 import { MESSAGES } from '~/constants/messages'
 import { BookingStatus } from '~/constants/enums'
+import { ErrorWithStatus } from '~/models/Errors'
+import HTTP_STATUS from '~/constants/httpStatus'
 
 class CouponsService {
   async getPublicCoupons(params: { page?: number; limit?: number; keyword?: string }) {
@@ -111,6 +113,57 @@ class CouponsService {
         total_pages: Math.ceil(total / limit)
       }
     }
+  }
+
+  async getSuggestedCoupons(user_id: string, booking_id: string) {
+    const booking = await databaseServices.bookings.findOne({
+      _id: new ObjectId(booking_id),
+      user_id: new ObjectId(user_id)
+    })
+
+    if (!booking) {
+      throw new ErrorWithStatus({
+        message: MESSAGES.BOOKING_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const order_value = booking.total_price
+    const now = new Date()
+
+    const coupons = await databaseServices.coupons
+      .aggregate([
+        {
+          $match: {
+            is_active: true,
+            expires_at: { $gte: now },
+            $expr: { $lt: ['$used_count', '$max_usage'] },
+            min_order_value: { $lte: order_value },
+            used_by: { $nin: [new ObjectId(user_id)] } // dùng used_by thay vì lookup
+          }
+        },
+        {
+          $addFields: {
+            discount_amount: {
+              $min: ['$value', order_value]
+            }
+          }
+        },
+        { $sort: { discount_amount: -1 } },
+        { $limit: 5 },
+        {
+          $project: {
+            code: 1,
+            value: 1,
+            min_order_value: 1,
+            expires_at: 1,
+            discount_amount: 1
+          }
+        }
+      ])
+      .toArray()
+
+    return { coupons }
   }
 
   async updateCoupon(id: string, payload: UpdateCouponReqBody) {

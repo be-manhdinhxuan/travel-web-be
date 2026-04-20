@@ -1,3 +1,4 @@
+import e from 'express'
 import { checkSchema } from 'express-validator'
 import { ObjectId } from 'mongodb'
 import HTTP_STATUS from '~/constants/httpStatus'
@@ -155,6 +156,39 @@ export const getCouponsValidator = validate(
       }
     },
     ['query']
+  )
+)
+
+export const bookingIdForCouponValidator = validate(
+  checkSchema(
+    {
+      booking_id: {
+        notEmpty: {
+          errorMessage: MESSAGES.BOOKING_ID_IS_REQUIRED
+        },
+        custom: {
+          options: async (value: string) => {
+            if (!ObjectId.isValid(value)) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_ID_IS_INVALID,
+                status: HTTP_STATUS.BAD_REQUEST
+              })
+            }
+            const booking = await databaseServices.bookings.findOne({
+              _id: new ObjectId(value)
+            })
+            if (!booking) {
+              throw new ErrorWithStatus({
+                message: MESSAGES.BOOKING_NOT_FOUND,
+                status: HTTP_STATUS.NOT_FOUND
+              })
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['params']
   )
 )
 

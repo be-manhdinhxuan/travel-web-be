@@ -5,6 +5,7 @@ import {
   createCouponController,
   getCouponsController,
   getPublicCouponsController,
+  getSuggestedCouponsController,
   toggleCouponController,
   updateCouponController,
   validateCouponController
@@ -13,6 +14,7 @@ import { authorize } from '~/middlewares/authorize.middlewares'
 import { accessTokenValidator } from '~/middlewares/auths.middlewares'
 import { checkAllowedFields } from '~/middlewares/common.middlewares'
 import {
+  bookingIdForCouponValidator,
   couponIdValidator,
   createCouponValidator,
   getCouponsValidator,
@@ -63,6 +65,21 @@ couponsRouter.get(
   authorize([UserRole.Admin]),
   getCouponsValidator,
   wrapRequestHandler(getCouponsController)
+)
+
+/**
+ * Description: Get suggested coupons for current order
+ * Path: /suggest
+ * Method: GET
+ * Header: { Authorization: Bearer <access_token> }
+ * Param: {booking_id (string, required) }
+ */
+couponsRouter.get(
+  '/suggest/:booking_id',
+  accessTokenValidator,
+  verifiedUserValidator,
+  bookingIdForCouponValidator,
+  wrapRequestHandler(getSuggestedCouponsController)
 )
 
 /**
