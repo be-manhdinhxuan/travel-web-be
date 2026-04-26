@@ -41,6 +41,46 @@ function validateItinerary(itinerary: any[], durationDays: number) {
     }
   }
 }
+
+const buildTourWithMinPricePipeline = (match: any, now: Date) => [
+  { $match: match },
+  {
+    $lookup: {
+      from: 'schedules',
+      localField: '_id',
+      foreignField: 'tour_id',
+      as: 'schedules'
+    }
+  },
+  {
+    $addFields: {
+      schedules: {
+        $filter: {
+          input: '$schedules',
+          as: 's',
+          cond: {
+            $and: [
+              { $eq: ['$$s.status', ScheduleStatus.Available] },
+              { $gte: ['$$s.departure_date', now] },
+              { $gt: ['$$s.available_slots', 0] }
+            ]
+          }
+        }
+      }
+    }
+  },
+  { $match: { schedules: { $ne: [] } } },
+  {
+    $addFields: {
+      min_price: { $min: '$schedules.price_adult' }
+    }
+  },
+  {
+    $project: {
+      schedules: 0
+    }
+  }
+]
 class ToursService {
   async createTour(payload: CreateTourReqBody, files: Express.Multer.File[]) {
     const days = Number(payload.duration_days)
@@ -301,15 +341,14 @@ class ToursService {
   async getRecommendedTours(user_id?: string) {
     const now = new Date()
 
-    // Guest/User chưa login → show 10 tour mới nhất
+    // =========================
+    // 1. GUEST (CHƯA LOGIN)
+    // =========================
     if (!user_id) {
       const tours = await databaseServices.tours
         .aggregate([
-          {
-            $match: {
-              status: TourStatus.Active
-            }
-          },
+          { $match: { status: TourStatus.Active } },
+
           {
             $lookup: {
               from: 'schedules',
@@ -318,6 +357,7 @@ class ToursService {
               as: 'schedules'
             }
           },
+
           {
             $addFields: {
               schedules: {
@@ -335,34 +375,70 @@ class ToursService {
               }
             }
           },
-          {
-            $match: { schedules: { $ne: [] } }
-          },
+
+          { $match: { schedules: { $ne: [] } } },
+
           {
             $addFields: {
               min_price: { $min: '$schedules.price_adult' }
             }
           },
-          {
-            $sort: { created_at: -1 }
-          },
+
+          { $sort: { created_at: -1 } },
           { $limit: 10 },
-          {
-            $project: {
-              schedules: 0
-            }
-          }
+
+          { $project: { schedules: 0 } }
         ])
         .toArray()
 
       return { tours }
     }
 
-    // User đã login → show tour dựa trên lịch sử tương tác (booking history và wishlist)
     const userObjectId = new ObjectId(user_id)
 
-    const user = await databaseServices.users.findOne({ _id: userObjectId }, { projection: { wishlist: 1 } })
+    // =========================
+    // 2. LẤY USER + ROLE
+    // =========================
+    const user = await databaseServices.users.findOne({ _id: userObjectId }, { projection: { wishlist: 1, role: 1 } })
 
+    const role = user?.role
+
+    // =========================
+    // 3. ADMIN / EMPLOYEE
+    // =========================
+    if (role === UserRole.Admin || role === UserRole.Employee) {
+      const tours = await databaseServices.tours
+        .aggregate([
+          {
+            $lookup: {
+              from: 'schedules',
+              localField: '_id',
+              foreignField: 'tour_id',
+              as: 'schedules'
+            }
+          },
+
+          {
+            $addFields: {
+              min_price: {
+                $cond: [{ $gt: [{ $size: '$schedules' }, 0] }, { $min: '$schedules.price_adult' }, null]
+              }
+            }
+          },
+
+          { $sort: { created_at: -1 } },
+          { $limit: 10 },
+
+          { $project: { schedules: 0 } }
+        ])
+        .toArray()
+
+      return { tours }
+    }
+
+    // =========================
+    // 4. USER THƯỜNG
+    // =========================
     const wishlistIds: ObjectId[] = user?.wishlist || []
 
     const bookings = await databaseServices.bookings
@@ -372,15 +448,62 @@ class ToursService {
       })
       .toArray()
 
-    // Nếu user chưa có tương tác nào → show 10 tour mới nhất
+    // =========================
+    // 5. KHÔNG CÓ INTERACTION
+    // =========================
     if (bookings.length === 0 && wishlistIds.length === 0) {
       const tours = await databaseServices.tours
-        .aggregate([{ $match: { status: TourStatus.Active } }, { $sort: { created_at: -1 } }, { $limit: 10 }])
+        .aggregate([
+          { $match: { status: TourStatus.Active } },
+
+          {
+            $lookup: {
+              from: 'schedules',
+              localField: '_id',
+              foreignField: 'tour_id',
+              as: 'schedules'
+            }
+          },
+
+          {
+            $addFields: {
+              schedules: {
+                $filter: {
+                  input: '$schedules',
+                  as: 's',
+                  cond: {
+                    $and: [
+                      { $eq: ['$$s.status', ScheduleStatus.Available] },
+                      { $gte: ['$$s.departure_date', now] },
+                      { $gt: ['$$s.available_slots', 0] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+
+          { $match: { schedules: { $ne: [] } } },
+
+          {
+            $addFields: {
+              min_price: { $min: '$schedules.price_adult' }
+            }
+          },
+
+          { $sort: { created_at: -1 } },
+          { $limit: 10 },
+
+          { $project: { schedules: 0 } }
+        ])
         .toArray()
 
       return { tours }
     }
 
+    // =========================
+    // 6. USER CÓ INTERACTION
+    // =========================
     const bookedTourIds = bookings.map((b) => b.tour_snapshot?.tour_id).filter(Boolean)
 
     const interactedTourIds = [
@@ -417,6 +540,7 @@ class ToursService {
             _id: { $nin: bookedTourIds }
           }
         },
+
         {
           $lookup: {
             from: 'schedules',
@@ -425,6 +549,7 @@ class ToursService {
             as: 'schedules'
           }
         },
+
         {
           $addFields: {
             schedules: {
@@ -442,12 +567,15 @@ class ToursService {
             }
           }
         },
+
         { $match: { schedules: { $ne: [] } } },
+
         {
           $addFields: {
             min_price: { $min: '$schedules.price_adult' }
           }
         },
+
         {
           $addFields: {
             score: {
@@ -473,14 +601,11 @@ class ToursService {
             }
           }
         },
+
         { $sort: { score: -1, created_at: -1 } },
         { $limit: 10 },
-        {
-          $project: {
-            schedules: 0,
-            score: 0
-          }
-        }
+
+        { $project: { schedules: 0, score: 0 } }
       ])
       .toArray()
 
