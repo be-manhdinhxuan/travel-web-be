@@ -10,10 +10,10 @@ import { ScheduleStatus } from '~/constants/enums'
 
 export const idScheduleValidator: ParamSchema = {
   notEmpty: {
-    errorMessage: MESSAGES.TOUR_ID_IS_REQUIRED
+    errorMessage: MESSAGES.SCHEDULE_ID_IS_REQUIRED
   },
   isMongoId: {
-    errorMessage: MESSAGES.TOUR_ID_INVALID
+    errorMessage: MESSAGES.SCHEDULE_ID_IS_INVALID
   },
   custom: {
     options: async (value: string) => {

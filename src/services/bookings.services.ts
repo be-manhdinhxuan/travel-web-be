@@ -12,6 +12,7 @@ import {
 import Booking from '~/models/schemas/Booking.schema'
 import { generateBookingCode } from '~/utils/generateBookingCode'
 import { BookingStatus, PaymentStatus, ScheduleStatus, TourStatus, UserRole } from '~/constants/enums'
+import { syncScheduleStatus } from '~/utils/schedule.helpers'
 
 class BookingServices {
   async createBooking(user_id: string, payload: CreateBookingReqBody) {
@@ -108,6 +109,8 @@ class BookingServices {
           status: HTTP_STATUS.NOT_FOUND
         })
       }
+
+      await syncScheduleStatus(scheduleObjectId)
 
       // ====================== 7. TÍNH GIÁ ======================
       const adult_total = updatedSchedule.price_adult * (passengers.adults || 0)
@@ -215,7 +218,7 @@ class BookingServices {
           $inc: { available_slots: totalPassengers }
         }
       )
-
+      await syncScheduleStatus(scheduleObjectId)
       throw error
     }
   }
@@ -371,7 +374,7 @@ class BookingServices {
       },
       { returnDocument: 'after' }
     )
-
+    await syncScheduleStatus(booking!.schedule_id)
     return { booking: updatedBooking }
   }
 
@@ -552,6 +555,7 @@ class BookingServices {
         { _id: booking.schedule_id },
         { $inc: { available_slots: totalPassengers } }
       )
+      await syncScheduleStatus(booking.schedule_id)
 
       // Lấy payment SUCCESS gần nhất
       const payment = await databaseServices.payments.findOne(

@@ -6,6 +6,15 @@ import { BookingStatus, ScheduleStatus, UserRole } from '~/constants/enums'
 import { ErrorWithStatus } from '~/models/Errors'
 import { MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import { syncScheduleStatus } from '~/utils/schedule.helpers'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+const TZ = 'Asia/Ho_Chi_Minh'
 
 class SchedulesService {
   async createSchedule(tour_id: string, payload: CreateScheduleReqBody) {
@@ -29,10 +38,14 @@ class SchedulesService {
       })
     }
 
-    // ❗ check future
-    if (departureDate <= new Date()) {
+    const todayVN = dayjs().tz(TZ).startOf('day')
+
+    const departureVN = dayjs(departureDate).tz(TZ).startOf('day')
+
+    // Không cho tạo lịch hôm nay hoặc quá khứ
+    if (departureVN.isSame(todayVN) || departureVN.isBefore(todayVN)) {
       throw new ErrorWithStatus({
-        message: 'Ngày khởi hành phải ở tương lai',
+        message: 'Ngày khởi hành phải sau ngày hiện tại',
         status: HTTP_STATUS.BAD_REQUEST
       })
     }
@@ -84,7 +97,9 @@ class SchedulesService {
     // admin xem được tất cả status, user/guest chỉ xem available
     if (role !== UserRole.Admin) {
       filter.status = { $in: [ScheduleStatus.Available, ScheduleStatus.Full] }
-      filter.departure_date = { $gte: new Date() }
+      filter.departure_date = {
+        $gte: dayjs().tz(TZ).startOf('day').toDate()
+      }
     }
 
     if (departure_date) {
@@ -136,6 +151,16 @@ class SchedulesService {
       })
     }
 
+    const todayVN = dayjs().tz(TZ).startOf('day')
+    const departureVN = dayjs(schedule.departure_date).tz(TZ).startOf('day')
+
+    if (departureVN.isSame(todayVN) || departureVN.isBefore(todayVN)) {
+      throw new ErrorWithStatus({
+        message: 'Không thể chỉnh sửa lịch khởi hành đã bắt đầu',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
     // ===== DATE =====
     const newDeparture = payload.departure_date ? new Date(payload.departure_date) : schedule.departure_date
 
@@ -163,7 +188,11 @@ class SchedulesService {
 
     const hasBooking = schedule.available_slots !== schedule.total_slots
 
-    if (hasBooking && payload.departure_date) {
+    if (
+      hasBooking &&
+      payload.departure_date &&
+      new Date(payload.departure_date).getTime() !== schedule.departure_date.getTime()
+    ) {
       throw new ErrorWithStatus({
         message: 'Không thể thay đổi ngày khi đã có booking',
         status: HTTP_STATUS.BAD_REQUEST
@@ -195,13 +224,19 @@ class SchedulesService {
       updateData.available_slots = payload.total_slots - booked
     }
 
-    const updatedSchedule = await databaseServices.schedules.findOneAndUpdate(
+    await databaseServices.schedules.findOneAndUpdate(
       { _id: scheduleId },
       { $set: updateData },
       { returnDocument: 'after' }
     )
 
-    return { schedule: updatedSchedule }
+    await syncScheduleStatus(scheduleId)
+
+    const finalSchedule = await databaseServices.schedules.findOne({
+      _id: scheduleId
+    })
+
+    return { schedule: finalSchedule }
   }
 
   async deleteSchedule(id: string) {

@@ -6,6 +6,7 @@ import emailService from '~/services/email.services'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import { syncScheduleStatus } from '~/utils/schedule.helpers'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -51,6 +52,7 @@ const cancelExpiredBookings = async () => {
         $inc: { available_slots: totalPassengers }
       }
     )
+    await syncScheduleStatus(booking.schedule_id)
 
     console.log('[CRON] Cancel booking:', booking._id)
   }
