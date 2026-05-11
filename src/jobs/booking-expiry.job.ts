@@ -87,13 +87,13 @@ const updateExpiredSchedules = async () => {
   )
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
 const sendTourReminders = async () => {
   const now = dayjs().tz(TZ)
 
-  // hôm nay (00:00)
   const todayStart = now.startOf('day').toDate()
 
-  // ngày +3 (23:59:59)
   const endDay = now.add(3, 'day').endOf('day').toDate()
 
   const bookings = await databaseServices.bookings
@@ -122,8 +122,14 @@ const sendTourReminders = async () => {
       )
 
       console.log('[CRON] Sent reminder:', booking._id)
+
+      // delay tránh spam SMTP
+      await sleep(1000)
     } catch (err) {
       console.error('Reminder email failed:', err)
+
+      // delay cả khi lỗi
+      await sleep(3000)
     }
   }
 }

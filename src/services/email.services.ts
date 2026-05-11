@@ -1,14 +1,55 @@
 import nodemailer from 'nodemailer'
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
+export const transporter = nodemailer.createTransport({
+  host: 'smtp-relay.brevo.com',
+  port: 2525,
   secure: false,
+  requireTLS: true,
+
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASSWORD
-  }
+    user: process.env.BREVO_SMTP_USER,
+    pass: process.env.BREVO_SMTP_KEY
+  },
+
+  pool: true,
+  maxConnections: 3,
+  maxMessages: 100,
+
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
+
+  tls: {
+    rejectUnauthorized: false
+  },
+
+  logger: true,
+  debug: true
 })
+
+if (process.env.NODE_ENV === 'development') {
+  transporter.verify((error) => {
+    if (error) {
+      console.error('SMTP VERIFY ERROR:', error)
+    } else {
+      console.log('SMTP SERVER READY')
+    }
+  })
+}
+
+const sendMailSafe = async (options: nodemailer.SendMailOptions) => {
+  try {
+    const info = await transporter.sendMail(options)
+
+    console.log('[EMAIL] Sent:', info.messageId)
+
+    return info
+  } catch (error) {
+    console.error('[EMAIL] Send failed:', error)
+
+    return null
+  }
+}
 
 const buildClientUrl = (path: string, params?: Record<string, string>) => {
   const url = new URL(path, process.env.CLIENT_URL)
@@ -25,8 +66,8 @@ const buildClientUrl = (path: string, params?: Record<string, string>) => {
 const sendVerifyEmail = async (to: string, token: string) => {
   const verifyUrl = buildClientUrl(process.env.VERIFY_EMAIL_URL!, { token })
 
-  await transporter.sendMail({
-    from: `"Travel Web" <${process.env.MAIL_USER}>`,
+  await sendMailSafe({
+    from: `"Travel Web" <${process.env.MAIL_FROM}>`,
     to,
     subject: 'Xác thực tài khoản của bạn',
     text: `Xin chào,\n\nVui lòng xác thực email của bạn bằng cách truy cập link sau:\n\n${verifyUrl}\n\nLink có hiệu lực trong 24 giờ.\n\nNếu bạn không thực hiện đăng ký này, hãy bỏ qua email này.\n\nTrân trọng,\nTravel Web`
@@ -36,8 +77,8 @@ const sendVerifyEmail = async (to: string, token: string) => {
 const sendForgotPasswordEmail = async (to: string, forgot_password_token: string) => {
   const resetUrl = buildClientUrl(process.env.FORGOT_PASSWORD_URL!, { token: forgot_password_token })
 
-  await transporter.sendMail({
-    from: `"Travel Web" <${process.env.MAIL_USER}>`,
+  await sendMailSafe({
+    from: `"Travel Web" <${process.env.MAIL_FROM}>`,
     to,
     subject: 'Đặt lại mật khẩu',
     text: `Xin chào,\n\nChúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n\nTruy cập link sau để đặt lại mật khẩu:\n\n${resetUrl}\n\nLink có hiệu lực trong 15 phút.\n\nNếu không phải bạn yêu cầu, hãy bỏ qua email này.\n\nTrân trọng,\nTravel Web`
@@ -74,8 +115,8 @@ Trân trọng,
 Travel Web
   `
 
-  await transporter.sendMail({
-    from: `"Travel Web" <${process.env.MAIL_USER}>`,
+  await sendMailSafe({
+    from: `"Travel Web" <${process.env.MAIL_FROM}>`,
     to,
     subject: `Xác nhận đặt tour & Thanh toán thành công - ${booking_code}`,
     text
@@ -104,8 +145,8 @@ const sendTourReminderEmail = async (to: string, booking: any) => {
     Travel Web
       `
 
-  await transporter.sendMail({
-    from: `"Travel Web" <${process.env.MAIL_USER}>`,
+  await sendMailSafe({
+    from: `"Travel Web" <${process.env.MAIL_FROM}>`,
     to,
     subject: `Nhắc nhở chuyến đi sắp tới - ${booking_code}`,
     text

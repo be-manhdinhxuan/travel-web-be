@@ -173,11 +173,9 @@ class PaymentsService {
       )
 
       // GỬI EMAIL
-      try {
-        await emailService.sendBookingSuccessEmail(booking.contact_info.email, booking)
-      } catch (error) {
+      emailService.sendBookingSuccessEmail(booking.contact_info.email, booking).catch((error) => {
         console.error('Send booking email failed:', error)
-      }
+      })
 
       // cập nhật coupon
       if (booking?.coupon_id) {
@@ -350,11 +348,9 @@ class PaymentsService {
         }
       )
 
-      try {
-        await emailService.sendBookingSuccessEmail(booking.contact_info.email, booking)
-      } catch (error) {
+      emailService.sendBookingSuccessEmail(booking.contact_info.email, booking).catch((error) => {
         console.error('Send booking email failed:', error)
-      }
+      })
 
       if (booking?.coupon_id) {
         await databaseServices.coupons.updateOne(
