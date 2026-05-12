@@ -46,7 +46,7 @@ export const syncScheduleStatus = async (schedule_id: ObjectId) => {
     {
       $set: {
         status: nextStatus,
-        updated_at: new Date()
+        updated_at: dayjs().tz(TZ).toDate()
       }
     }
   )

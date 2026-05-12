@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { toVNDate } from '~/utils/time'
 
 export const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
@@ -95,8 +96,8 @@ Cảm ơn bạn đã đặt tour tại Travel Web 🎉
 
 📌 Mã booking: ${booking_code}
 🏝 Tour: ${tour_snapshot.tour_name}
-📅 Khởi hành: ${new Date(tour_snapshot.departure_date).toLocaleDateString('vi-VN')}
-📅 Kết thúc: ${new Date(tour_snapshot.return_date).toLocaleDateString('vi-VN')}
+📅 Khởi hành: ${toVNDate(tour_snapshot.departure_date).toLocaleDateString('vi-VN')}
+📅 Kết thúc: ${toVNDate(tour_snapshot.return_date).toLocaleDateString('vi-VN')}
 
 👨‍👩‍👧‍👦 Số lượng:
 - Người lớn: ${passengers.adults}
@@ -133,7 +134,7 @@ const sendTourReminderEmail = async (to: string, booking: any) => {
 
     📌 Mã booking: ${booking_code}
     🏝 Tour: ${tour_snapshot.tour_name}
-    📅 Khởi hành: ${new Date(tour_snapshot.departure_date).toLocaleDateString('vi-VN')}
+    📅 Khởi hành: ${toVNDate(tour_snapshot.departure_date).toLocaleDateString('vi-VN')}
 
     🎒 Hãy chuẩn bị hành lý và sẵn sàng cho chuyến đi nhé!
 

@@ -12,6 +12,7 @@ import { MESSAGES } from '~/constants/messages'
 import { BookingStatus } from '~/constants/enums'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
+import { nowVN, startOfDayVN, endOfDayVN, toVNDate } from '~/utils/time'
 
 class CouponsService {
   async getPublicCoupons(params: { page?: number; limit?: number; keyword?: string }) {
@@ -28,7 +29,7 @@ class CouponsService {
 
     const query: any = {
       is_active: true,
-      expires_at: { $gte: new Date() },
+      expires_at: { $gte: nowVN().toDate() },
       $expr: { $lt: ['$used_count', '$max_usage'] }
     }
 
@@ -74,7 +75,7 @@ class CouponsService {
       value: payload.value,
       min_order_value: payload.min_order_value,
       max_usage: payload.max_usage,
-      expires_at: new Date(payload.expires_at)
+      expires_at: toVNDate(payload.expires_at)
     })
 
     const result = await databaseServices.coupons.insertOne(coupon)
@@ -129,7 +130,7 @@ class CouponsService {
     }
 
     const order_value = booking.total_price
-    const now = new Date()
+    const now = nowVN().toDate()
 
     const coupons = await databaseServices.coupons
       .aggregate([
@@ -172,8 +173,8 @@ class CouponsService {
     const updateData: Partial<Coupon> = {
       ...rest,
       ...(code && { code: code.toUpperCase() }),
-      ...(expires_at && { expires_at: new Date(expires_at) }),
-      updated_at: new Date()
+      ...(expires_at && { expires_at: toVNDate(expires_at) }),
+      updated_at: nowVN().toDate()
     }
 
     const updatedCoupon = await databaseServices.coupons.findOneAndUpdate(
@@ -194,9 +195,9 @@ class CouponsService {
       { _id: new ObjectId(id) },
       {
         $set: {
-          is_active: !coupon!.is_active
-        },
-        $currentDate: { updated_at: true }
+          is_active: !coupon!.is_active,
+          updated_at: nowVN().toDate()
+        }
       },
       { returnDocument: 'after' }
     )
@@ -234,7 +235,7 @@ class CouponsService {
     }
 
     // coupon hết hạn
-    if (coupon.expires_at < new Date()) {
+    if (coupon.expires_at < nowVN().toDate()) {
       return {
         is_valid: false,
         discount_amount: 0,
@@ -301,7 +302,7 @@ class CouponsService {
     const coupon = await databaseServices.coupons.findOne({
       code: coupon_code.toUpperCase(),
       is_active: true,
-      expires_at: { $gte: new Date() },
+      expires_at: { $gte: nowVN().toDate() },
       $expr: { $lt: ['$used_count', '$max_usage'] }
     })
 
@@ -316,7 +317,7 @@ class CouponsService {
           'price_detail.discount_amount': discount_amount,
           'price_detail.coupon_code': coupon_code.toUpperCase(),
           final_price,
-          updated_at: new Date()
+          updated_at: nowVN().toDate()
         }
       }
     )

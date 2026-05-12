@@ -12,6 +12,7 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { generateUniqueTourSlug } from '~/utils/generateTourSlug'
 import { uploadImage } from '~/middlewares/uploads.middlewares'
 import cloudinary, { getPublicIdFromUrl } from '~/utils/cloudinary'
+import { nowVN, nowVNDate, startOfDayVN, endOfDayVN, toVNDate } from '~/utils/time'
 
 function validateItinerary(itinerary: any[], durationDays: number) {
   if (!Array.isArray(itinerary)) {
@@ -203,26 +204,24 @@ class ToursService {
         $in: ['$$s.status', [ScheduleStatus.Available, ScheduleStatus.Full]]
       },
       {
-        $gte: ['$$s.departure_date', new Date()]
+        $gte: ['$$s.departure_date', nowVNDate()]
       }
     ]
 
     // departure_from
     if (query.departure_from) {
       scheduleMatchConditions.push({
-        $gte: ['$$s.departure_date', new Date(query.departure_from)]
+        $gte: ['$$s.departure_date', toVNDate(query.departure_from)]
       })
     } else {
       scheduleMatchConditions.push({
-        $gte: ['$$s.departure_date', new Date()]
+        $gte: ['$$s.departure_date', nowVNDate()]
       })
     }
 
     // departure_to
     if (query.departure_to) {
-      const end = new Date(query.departure_to)
-      end.setHours(23, 59, 59, 999)
-
+      const end = endOfDayVN(query.departure_to)
       scheduleMatchConditions.push({
         $lte: ['$$s.departure_date', end]
       })
@@ -339,7 +338,7 @@ class ToursService {
   }
 
   async getRecommendedTours(user_id?: string) {
-    const now = new Date()
+    const now = nowVNDate()
 
     // =========================
     // 1. GUEST (CHƯA LOGIN)
@@ -529,8 +528,7 @@ class ToursService {
       avgBudget = total / bookings.length
     }
 
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(now.getDate() - 30)
+    const thirtyDaysAgo = startOfDayVN(nowVN().subtract(30, 'day').toDate())
 
     const tours = await databaseServices.tours
       .aggregate([
@@ -640,7 +638,7 @@ class ToursService {
         status: {
           $in: [ScheduleStatus.Available, ScheduleStatus.Full]
         },
-        departure_date: { $gte: new Date() }
+        departure_date: { $gte: nowVNDate() }
       }
     }
 
@@ -731,7 +729,7 @@ class ToursService {
       updateData.images = uploadedImages.map((img) => img.secure_url)
     }
 
-    updateData.updated_at = new Date()
+    updateData.updated_at = nowVNDate()
 
     const updatedTour = await databaseServices.tours.findOneAndUpdate(
       { _id: new ObjectId(id) },

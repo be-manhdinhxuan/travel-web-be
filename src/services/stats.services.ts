@@ -1,39 +1,35 @@
 import { BookingStatus, PaymentStatus } from '~/constants/enums'
 import databaseServices from './database.services'
 import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
+import { nowVN, nowVNDate, startOfDayVN, endOfDayVN, toVNDate, TZ } from '~/utils/time'
 import { Document } from 'mongodb'
 
 // helper tính khoảng thời gian
 const getPeriodRange = (period: string) => {
-  const now = new Date()
-  const current = { from: new Date(), to: new Date(now) }
-  const previous = { from: new Date(), to: new Date() }
+  const now = nowVNDate()
+  const current = { from: nowVNDate(), to: nowVNDate() }
+  const previous = { from: nowVNDate(), to: nowVNDate() }
 
   if (period === 'today') {
-    current.from = new Date(now.setHours(0, 0, 0, 0))
-    previous.from = new Date(current.from)
-    previous.from.setDate(previous.from.getDate() - 1)
-    previous.to = new Date(current.from)
-    previous.to.setMilliseconds(-1)
+    current.from = startOfDayVN(now)
+    current.to = endOfDayVN(now)
+    previous.from = startOfDayVN(dayjs(now).subtract(1, 'day').toDate())
+    previous.to = endOfDayVN(dayjs(now).subtract(1, 'day').toDate())
   } else if (period === 'week') {
-    current.from = new Date(now)
-    current.from.setDate(now.getDate() - 7)
-    previous.from = new Date(current.from)
-    previous.from.setDate(previous.from.getDate() - 7)
-    previous.to = new Date(current.from)
-    previous.to.setMilliseconds(-1)
+    current.from = startOfDayVN(dayjs(now).subtract(7, 'day').toDate())
+    current.to = endOfDayVN(now)
+    previous.from = startOfDayVN(dayjs(now).subtract(14, 'day').toDate())
+    previous.to = endOfDayVN(dayjs(now).subtract(7, 'day').toDate())
   } else if (period === 'month') {
-    current.from = new Date(now.getFullYear(), now.getMonth(), 1)
-    previous.from = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    previous.to = new Date(current.from)
-    previous.to.setMilliseconds(-1)
+    current.from = startOfDayVN(dayjs(now).startOf('month').toDate())
+    current.to = endOfDayVN(dayjs(now).endOf('month').toDate())
+    previous.from = startOfDayVN(dayjs(now).subtract(1, 'month').startOf('month').toDate())
+    previous.to = endOfDayVN(dayjs(now).subtract(1, 'month').endOf('month').toDate())
   } else if (period === 'year') {
-    current.from = new Date(now.getFullYear(), 0, 1)
-    previous.from = new Date(now.getFullYear() - 1, 0, 1)
-    previous.to = new Date(current.from)
-    previous.to.setMilliseconds(-1)
+    current.from = startOfDayVN(dayjs(now).startOf('year').toDate())
+    current.to = endOfDayVN(dayjs(now).endOf('year').toDate())
+    previous.from = startOfDayVN(dayjs(now).subtract(1, 'year').startOf('year').toDate())
+    previous.to = endOfDayVN(dayjs(now).subtract(1, 'year').endOf('year').toDate())
   }
 
   return { current, previous }
@@ -43,12 +39,10 @@ function fillMissingDates(data: any[], days: number) {
   const map = new Map(data.map((item) => [item.date, item]))
 
   const result: any[] = []
-  const today = new Date()
+  const today = nowVNDate()
 
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today)
-    d.setDate(today.getDate() - i)
-
+    const d = dayjs(today).subtract(i, 'day').toDate()
     const year = d.getFullYear()
     const month = String(d.getMonth() + 1).padStart(2, '0')
     const day = String(d.getDate()).padStart(2, '0')
@@ -99,7 +93,7 @@ function fillMissingYears(data: any[]) {
   const map = new Map(data.map((item) => [item.date, item]))
 
   const result: any[] = []
-  const currentYear = new Date().getFullYear()
+  const currentYear = nowVN().year()
 
   const fromYear = currentYear - 4
 
@@ -121,11 +115,6 @@ function fillMissingYears(data: any[]) {
 
   return result
 }
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
-
-const TZ = 'Asia/Ho_Chi_Minh'
 
 class StatsService {
   async getOverviewStats(period: string) {
@@ -195,37 +184,37 @@ class StatsService {
   }
 
   async getRevenueStats(period: string, year?: number) {
-    const now = dayjs().tz(TZ)
+    const now = nowVN()
     const currentYear = year || now.year()
 
     // ===== 1. BUILD RANGE =====
     const getRange = () => {
       if (period === 'today') {
         return {
-          start: now.startOf('day').utc().toDate(),
-          end: now.endOf('day').utc().toDate()
+          start: startOfDayVN(now.toDate()),
+          end: endOfDayVN(now.toDate())
         }
       }
 
       if (period === 'week') {
         return {
-          start: now.subtract(6, 'day').startOf('day').utc().toDate(),
-          end: now.endOf('day').utc().toDate()
+          start: startOfDayVN(now.subtract(6, 'day').toDate()),
+          end: endOfDayVN(now.toDate())
         }
       }
 
       if (period === 'month') {
         return {
-          start: dayjs.tz(`${currentYear}-01-01`, TZ).startOf('day').utc().toDate(),
-          end: dayjs.tz(`${currentYear}-12-31`, TZ).endOf('day').utc().toDate()
+          start: startOfDayVN(dayjs(`${currentYear}-01-01`).toDate()),
+          end: endOfDayVN(dayjs(`${currentYear}-12-31`).toDate())
         }
       }
 
       if (period === 'year') {
         const fromYear = currentYear - 4
         return {
-          start: dayjs.tz(`${fromYear}-01-01`, TZ).startOf('day').utc().toDate(),
-          end: now.endOf('day').utc().toDate()
+          start: startOfDayVN(dayjs(`${fromYear}-01-01`).toDate()),
+          end: endOfDayVN(now.toDate())
         }
       }
 
@@ -373,23 +362,20 @@ class StatsService {
   }
 
   async getTopToursStats(period: string, limit: number) {
-    const now = new Date()
+    const now = nowVNDate()
 
     // Build dynamic from date based on period
     const buildFromDate = () => {
       if (period === 'week') {
-        const d = new Date(now)
-        d.setDate(now.getDate() - 6)
-        d.setHours(0, 0, 0, 0)
-        return d
+        return startOfDayVN(dayjs(now).subtract(6, 'day').toDate())
       }
 
       if (period === 'month') {
-        return new Date(now.getFullYear(), now.getMonth(), 1)
+        return startOfDayVN(dayjs(now).startOf('month').toDate())
       }
 
       if (period === 'year') {
-        return new Date(now.getFullYear(), 0, 1)
+        return startOfDayVN(dayjs(now).startOf('year').toDate())
       }
 
       return new Date(0)

@@ -7,6 +7,7 @@ import { ErrorWithStatus } from '~/models/Errors'
 import databaseServices from '~/services/database.services'
 import { validate } from '~/utils/validation'
 import { Request } from 'express'
+import { nowVNDate } from '~/utils/time'
 
 export const createBookingValidator = validate(
   checkSchema(
@@ -23,7 +24,7 @@ export const createBookingValidator = validate(
             const schedule = await databaseServices.schedules.findOne({
               _id: new ObjectId(value),
               status: { $in: [ScheduleStatus.Available, ScheduleStatus.Full] },
-              departure_date: { $gte: new Date() }
+              departure_date: { $gte: nowVNDate() }
             })
             if (!schedule) {
               throw new ErrorWithStatus({

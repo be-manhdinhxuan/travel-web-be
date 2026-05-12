@@ -9,6 +9,7 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import { toVNDate } from '~/utils/time'
 import { syncScheduleStatus } from '~/utils/schedule.helpers'
 
 dayjs.extend(utc)
@@ -29,7 +30,7 @@ class SchedulesService {
       })
     }
 
-    const departureDate = new Date(payload.departure_date)
+    const departureDate = toVNDate(payload.departure_date)
 
     if (isNaN(departureDate.getTime())) {
       throw new ErrorWithStatus({
@@ -51,7 +52,10 @@ class SchedulesService {
     }
 
     // 🔥 tính return_date từ tour
-    const returnDate = new Date(departureDate)
+    const returnDate = dayjs(departureDate)
+      .tz(TZ)
+      .add(tour.duration_days - 1, 'day')
+      .toDate()
     returnDate.setDate(returnDate.getDate() + (tour.duration_days - 1))
 
     const existing = await databaseServices.schedules.findOne({
@@ -103,7 +107,7 @@ class SchedulesService {
     }
 
     if (departure_date) {
-      filter.departure_date = { $gte: new Date(departure_date) }
+      filter.departure_date = { $gte: toVNDate(departure_date) }
     }
 
     if (num_people) {
@@ -120,7 +124,7 @@ class SchedulesService {
 
   async updateSchedule(id: string, payload: UpdateScheduleReqBody) {
     const scheduleId = new ObjectId(id)
-    const now = new Date()
+    const now = dayjs().tz(TZ).toDate()
 
     const schedule = await databaseServices.schedules.findOne({
       _id: scheduleId
@@ -162,10 +166,10 @@ class SchedulesService {
     }
 
     // ===== DATE =====
-    const newDeparture = payload.departure_date ? new Date(payload.departure_date) : schedule.departure_date
+    const newDeparture = payload.departure_date ? toVNDate(payload.departure_date) : schedule.departure_date
 
     if (payload.departure_date) {
-      if (newDeparture <= now) {
+      if (dayjs(newDeparture).isBefore(dayjs().tz(TZ))) {
         throw new ErrorWithStatus({
           message: 'Departure date must be in the future',
           status: HTTP_STATUS.BAD_REQUEST
@@ -191,7 +195,7 @@ class SchedulesService {
     if (
       hasBooking &&
       payload.departure_date &&
-      new Date(payload.departure_date).getTime() !== schedule.departure_date.getTime()
+      toVNDate(payload.departure_date).getTime() !== schedule.departure_date.getTime()
     ) {
       throw new ErrorWithStatus({
         message: 'Không thể thay đổi ngày khi đã có booking',
@@ -199,7 +203,9 @@ class SchedulesService {
       })
     }
 
-    const newReturn = new Date(newDeparture)
+    const newReturn = dayjs(newDeparture)
+      .add(tour.duration_days - 1, 'day')
+      .toDate()
     newReturn.setDate(newReturn.getDate() + (tour.duration_days - 1))
 
     // ===== UPDATE DATA =====

@@ -3,6 +3,7 @@ import databaseServices from './database.services'
 import Review from '~/models/schemas/Review.schema'
 import Booking from '~/models/schemas/Booking.schema'
 import { CreateReviewReqBody, GetReviewsQuery } from '~/models/requests/Review.request'
+import { nowVNDate } from '~/utils/time'
 
 class ReviewsService {
   async createReview(user_id: string, booking: Booking, payload: CreateReviewReqBody) {
@@ -13,7 +14,8 @@ class ReviewsService {
       tour_id: booking.tour_snapshot.tour_id,
       booking_id: new ObjectId(booking_id),
       rating,
-      comment
+      comment,
+      created_at: nowVNDate()
     })
 
     await databaseServices.reviews.insertOne(review)
@@ -40,7 +42,7 @@ class ReviewsService {
           $set: {
             average_rating: Math.round(stats[0].average_rating * 10) / 10, // làm tròn 1 chữ số thập phân
             total_reviews: stats[0].total_reviews,
-            updated_at: new Date()
+            updated_at: nowVNDate()
           }
         }
       )

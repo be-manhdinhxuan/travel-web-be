@@ -13,6 +13,7 @@ import Booking from '~/models/schemas/Booking.schema'
 import { generateBookingCode } from '~/utils/generateBookingCode'
 import { BookingStatus, PaymentStatus, ScheduleStatus, TourStatus, UserRole } from '~/constants/enums'
 import { syncScheduleStatus } from '~/utils/schedule.helpers'
+import { nowVN, startOfDayVN, endOfDayVN, toVNDate, nowVNDate } from '~/utils/time'
 
 class BookingServices {
   async createBooking(user_id: string, payload: CreateBookingReqBody) {
@@ -20,7 +21,7 @@ class BookingServices {
 
     const scheduleObjectId = new ObjectId(schedule_id)
     const userObjectId = new ObjectId(user_id)
-    const now = new Date()
+    const now = nowVN().toDate()
 
     // ====================== 1. VALIDATE PASSENGERS ======================
     const totalPassengers = (passengers.adults || 0) + (passengers.children || 0) + (passengers.babies || 0)
@@ -66,7 +67,7 @@ class BookingServices {
       })
     }
 
-    if (new Date(schedule.departure_date) < now) {
+    if (toVNDate(schedule.departure_date) < nowVN().toDate()) {
       throw new ErrorWithStatus({
         message: 'Schedule has expired',
         status: HTTP_STATUS.BAD_REQUEST
@@ -79,7 +80,7 @@ class BookingServices {
         _id: scheduleObjectId,
         available_slots: { $gte: totalPassengers },
         status: ScheduleStatus.Available,
-        departure_date: { $gte: now }
+        departure_date: { $gte: nowVN().toDate() }
       },
       {
         $inc: { available_slots: -totalPassengers }
@@ -128,7 +129,7 @@ class BookingServices {
         const coupon = await databaseServices.coupons.findOne({
           code: coupon_code.toUpperCase(),
           is_active: true,
-          expires_at: { $gte: now },
+          expires_at: { $gte: nowVN().toDate() },
           $expr: { $lt: ['$used_count', '$max_usage'] }
         })
 
@@ -369,7 +370,7 @@ class BookingServices {
         $set: {
           status: BookingStatus.Cancelled,
           cancelled_reason: reason || '',
-          updated_at: new Date()
+          updated_at: nowVN().toDate()
         }
       },
       { returnDocument: 'after' }
@@ -403,12 +404,10 @@ class BookingServices {
     if (query.from_date || query.to_date) {
       filter.created_at = {}
       if (query.from_date) {
-        filter.created_at.$gte = new Date(query.from_date)
+        filter.created_at.$gte = startOfDayVN(query.from_date)
       }
       if (query.to_date) {
-        const toDate = new Date(query.to_date)
-        toDate.setHours(23, 59, 59, 999)
-        filter.created_at.$lte = toDate
+        filter.created_at.$lte = endOfDayVN(query.to_date)
       }
     }
 
@@ -572,7 +571,7 @@ class BookingServices {
           {
             $set: {
               status: PaymentStatus.Refunded_Pending,
-              updated_at: new Date()
+              updated_at: nowVN().toDate()
             }
           }
         )
@@ -585,7 +584,7 @@ class BookingServices {
     if (status === BookingStatus.Completed) {
       const returnDate = new Date(booking.tour_snapshot.return_date)
 
-      if (returnDate > new Date()) {
+      if (returnDate > nowVNDate()) {
         throw new ErrorWithStatus({
           message: MESSAGES.TOUR_NOT_FINISHED_YET,
           status: HTTP_STATUS.BAD_REQUEST
@@ -600,7 +599,7 @@ class BookingServices {
         $set: {
           status,
           ...(cancelled_reason && { cancelled_reason }),
-          updated_at: new Date()
+          updated_at: nowVN().toDate()
         }
       },
       { returnDocument: 'after' }
@@ -659,8 +658,8 @@ class BookingServices {
       {
         $set: {
           status: PaymentStatus.Refunded,
-          refunded_at: new Date(),
-          updated_at: new Date()
+          refunded_at: nowVN().toDate(),
+          updated_at: nowVN().toDate()
         }
       }
     )

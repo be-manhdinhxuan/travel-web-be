@@ -6,7 +6,7 @@ import { BookingStatus, PaymentProvider, PaymentStatus } from '~/constants/enums
 import crypto from 'crypto'
 import { createVnpayPaymentUrl } from './vnpay.services'
 import emailService from './email.services'
-
+import { nowVNDate } from '~/utils/time'
 class PaymentsService {
   async createMomoPayment(booking_id: string, user_id: string) {
     const booking = await databaseServices.bookings.findOne({
@@ -27,7 +27,7 @@ class PaymentsService {
       {
         $set: {
           status: PaymentStatus.Failed,
-          updated_at: new Date()
+          updated_at: nowVNDate()
         }
       }
     )
@@ -132,8 +132,8 @@ class PaymentsService {
               status: PaymentStatus.Success,
               transaction_id: transId.toString(),
               raw_response: payload,
-              paid_at: new Date(),
-              updated_at: new Date(),
+              paid_at: nowVNDate(),
+              updated_at: nowVNDate(),
               note: 'Paid after booking expired'
             }
           }
@@ -156,8 +156,8 @@ class PaymentsService {
             status: PaymentStatus.Success,
             transaction_id: transId.toString(),
             raw_response: payload,
-            paid_at: new Date(),
-            updated_at: new Date()
+            paid_at: nowVNDate(),
+            updated_at: nowVNDate()
           }
         }
       )
@@ -167,7 +167,7 @@ class PaymentsService {
         {
           $set: {
             status: BookingStatus.Confirmed,
-            updated_at: new Date()
+            updated_at: nowVNDate()
           }
         }
       )
@@ -195,7 +195,7 @@ class PaymentsService {
           $set: {
             status: PaymentStatus.Failed,
             raw_response: payload,
-            updated_at: new Date()
+            updated_at: nowVNDate()
           }
         }
       )
@@ -220,7 +220,7 @@ class PaymentsService {
       {
         $set: {
           status: PaymentStatus.Failed,
-          updated_at: new Date()
+          updated_at: nowVNDate()
         }
       }
     )
@@ -314,8 +314,8 @@ class PaymentsService {
               status: PaymentStatus.Success,
               transaction_id: vnpParams['vnp_TransactionNo'],
               raw_response: vnpParams,
-              paid_at: new Date(),
-              updated_at: new Date(),
+              paid_at: nowVNDate(),
+              updated_at: nowVNDate(),
               note: 'Paid after booking expired'
             }
           }
@@ -332,8 +332,8 @@ class PaymentsService {
             status: PaymentStatus.Success,
             transaction_id: vnpParams['vnp_TransactionNo'],
             raw_response: vnpParams,
-            paid_at: new Date(),
-            updated_at: new Date()
+            paid_at: nowVNDate(),
+            updated_at: nowVNDate()
           }
         }
       )
@@ -343,7 +343,7 @@ class PaymentsService {
         {
           $set: {
             status: BookingStatus.Confirmed,
-            updated_at: new Date()
+            updated_at: nowVNDate()
           }
         }
       )
@@ -369,7 +369,7 @@ class PaymentsService {
           $set: {
             status: PaymentStatus.Failed,
             raw_response: vnpParams,
-            updated_at: new Date()
+            updated_at: nowVNDate()
           }
         }
       )

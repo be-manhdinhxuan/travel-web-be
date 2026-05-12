@@ -11,6 +11,7 @@ import Category from '~/models/schemas/Category.schema'
 import cloudinary, { getPublicIdFromUrl } from '~/utils/cloudinary'
 import { generateUniqueCategorySlug } from '~/utils/generateCategorySlug'
 import { TourStatus, UserRole } from '~/constants/enums'
+import { nowVN } from '~/utils/time'
 
 class CategoriesService {
   async getCategories(role?: UserRole) {
@@ -123,7 +124,7 @@ class CategoriesService {
       }
     }
 
-    updateData.updated_at = new Date()
+    updateData.updated_at = nowVN().toDate()
 
     const updatedCategory = await databaseServices.categories.findOneAndUpdate(
       { _id: new ObjectId(id) },
@@ -164,9 +165,9 @@ class CategoriesService {
       { _id: objectId },
       {
         $set: {
-          thumbnail: upload.secure_url
-        },
-        $currentDate: { updated_at: true }
+          thumbnail: upload.secure_url,
+          updated_at: nowVN().toDate()
+        }
       },
       { returnDocument: 'after' }
     )
@@ -207,7 +208,7 @@ class CategoriesService {
 
     const updatedCategory = await databaseServices.categories.findOneAndUpdate(
       { _id: new ObjectId(id) },
-      { $set: updateData, $currentDate: { updated_at: true } },
+      { $set: updateData, updated_at: nowVN().toDate() },
       { returnDocument: 'after' }
     )
 

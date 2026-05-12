@@ -7,6 +7,7 @@ import { ObjectId } from 'mongodb'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { ScheduleStatus } from '~/constants/enums'
+import { nowVNDate } from '~/utils/time'
 
 export const idScheduleValidator: ParamSchema = {
   notEmpty: {
@@ -46,7 +47,7 @@ export const createScheduleValidator = validate(
         custom: {
           options: (value: string) => {
             const date = new Date(value)
-            if (date <= new Date()) {
+            if (date <= nowVNDate()) {
               throw new Error(MESSAGES.DEPARTURE_DATE_MUST_BE_IN_FUTURE)
             }
             return true
@@ -127,7 +128,7 @@ export const updateScheduleValidator = validate(
         custom: {
           options: (value: string) => {
             const date = new Date(value)
-            if (date <= new Date()) {
+            if (date <= nowVNDate()) {
               throw new Error(MESSAGES.DEPARTURE_DATE_MUST_BE_IN_FUTURE)
             }
             return true

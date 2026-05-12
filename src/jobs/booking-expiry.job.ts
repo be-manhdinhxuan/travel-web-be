@@ -10,10 +10,12 @@ import { syncScheduleStatus } from '~/utils/schedule.helpers'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
+
 const TZ = 'Asia/Ho_Chi_Minh'
 
 const cancelExpiredBookings = async () => {
-  const experiedTime = new Date(Date.now() - 30 * 60 * 1000) // 30 phút trước
+  // FIX TIMEZONE
+  const experiedTime = dayjs().tz(TZ).subtract(30, 'minute').toDate()
 
   const expiredBookings = await databaseServices.bookings
     .find({
@@ -36,7 +38,7 @@ const cancelExpiredBookings = async () => {
         $set: {
           status: BookingStatus.Cancelled,
           cancelled_reason: 'Hết thời gian thanh toán',
-          updated_at: new Date()
+          updated_at: dayjs().tz(TZ).toDate() // FIX
         }
       },
       {
@@ -52,6 +54,7 @@ const cancelExpiredBookings = async () => {
         $inc: { available_slots: totalPassengers }
       }
     )
+
     await syncScheduleStatus(booking.schedule_id)
 
     console.log('[CRON] Cancel booking:', booking._id)
@@ -59,31 +62,34 @@ const cancelExpiredBookings = async () => {
 }
 
 const completeExpiredBookings = async () => {
+  // FIX TIMEZONE
   await databaseServices.bookings.updateMany(
     {
       status: BookingStatus.Confirmed,
-      'tour_snapshot.return_date': { $lt: new Date() }
+      'tour_snapshot.return_date': {
+        $lt: dayjs().tz(TZ).toDate()
+      }
     },
     {
       $set: {
         status: BookingStatus.Completed,
-        updated_at: new Date()
+        updated_at: dayjs().tz(TZ).toDate() // FIX
       }
     }
   )
 }
 
 const updateExpiredSchedules = async () => {
-  // Schedule đã qua departure_date → chuyển sang Expired
+  // FIX TIMEZONE
   await databaseServices.schedules.updateMany(
     {
-      departure_date: { $lt: new Date() },
+      departure_date: { $lt: dayjs().tz(TZ).toDate() },
       status: { $in: [ScheduleStatus.Available, ScheduleStatus.Full] }
     },
     {
       $set: {
         status: ScheduleStatus.Expired,
-        updated_at: new Date()
+        updated_at: dayjs().tz(TZ).toDate() // FIX
       }
     }
   )
@@ -95,7 +101,6 @@ const sendTourReminders = async () => {
   const now = dayjs().tz(TZ)
 
   const todayStart = now.startOf('day').toDate()
-
   const endDay = now.add(3, 'day').endOf('day').toDate()
 
   const bookings = await databaseServices.bookings
@@ -118,33 +123,28 @@ const sendTourReminders = async () => {
         {
           $set: {
             reminder_sent: true,
-            updated_at: new Date()
+            updated_at: dayjs().tz(TZ).toDate() // FIX
           }
         }
       )
 
       console.log('[CRON] Sent reminder:', booking._id)
 
-      // delay tránh spam SMTP
       await sleep(1000)
     } catch (err) {
       console.error('Reminder email failed:', err)
 
-      // delay cả khi lỗi
       await sleep(3000)
     }
   }
 }
 
-cron.schedule('0 0 * * *', updateExpiredSchedules) // chạy mỗi ngày 00:00
-
-// Chạy mỗi ngày lúc 00:00
+// cron jobs
+cron.schedule('0 0 * * *', updateExpiredSchedules)
 cron.schedule('0 0 * * *', completeExpiredBookings)
 
-// chạy mỗi 5 phút
 const bookingExpiryJob = cron.schedule('*/5 * * * *', cancelExpiredBookings)
 
-// Chạy mỗi giờ
 cron.schedule('0 * * * *', sendTourReminders)
 
 export default bookingExpiryJob

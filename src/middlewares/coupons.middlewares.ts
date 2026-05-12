@@ -6,6 +6,7 @@ import { MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import databaseServices from '~/services/database.services'
 import { validate } from '~/utils/validation'
+import { nowVNDate } from '~/utils/time'
 
 export const getPublicCouponsValidator = validate(
   checkSchema(
@@ -109,7 +110,7 @@ export const createCouponValidator = validate(
         },
         custom: {
           options: (value: string) => {
-            if (new Date(value) <= new Date()) {
+            if (new Date(value) <= nowVNDate()) {
               throw new Error(MESSAGES.COUPON_EXPIRES_AT_MUST_BE_IN_FUTURE)
             }
             return true
@@ -276,7 +277,7 @@ export const updateCouponValidator = validate(
         },
         custom: {
           options: (value: string) => {
-            if (new Date(value) <= new Date()) {
+            if (new Date(value) <= nowVNDate()) {
               throw new Error(MESSAGES.COUPON_EXPIRES_AT_MUST_BE_IN_FUTURE)
             }
             return true
