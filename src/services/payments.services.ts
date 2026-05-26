@@ -129,7 +129,7 @@ class PaymentsService {
           { provider_order_id: orderId },
           {
             $set: {
-              status: PaymentStatus.Success,
+              status: PaymentStatus.Refunded_Pending,
               transaction_id: transId.toString(),
               raw_response: payload,
               paid_at: nowVNDate(),
@@ -311,7 +311,7 @@ class PaymentsService {
           { provider_order_id: orderId },
           {
             $set: {
-              status: PaymentStatus.Success,
+              status: PaymentStatus.Refunded_Pending,
               transaction_id: vnpParams['vnp_TransactionNo'],
               raw_response: vnpParams,
               paid_at: nowVNDate(),
